@@ -1,76 +1,119 @@
-# NutriEvidence：专用 AI vs 通用大模型评测台
+# EvidenceLab：通用模型 vs 领域 RAG 对照评测
 
-赛道三的可运行 MVP。它支持饮食营养和高血压临床两个实验域，分别对比纯通用大模型与领域 RAG，并专门测试检索噪声和检索缺失是否拖累回答。
+赛道三的可运行 MVP，同时覆盖两个实验域：
 
-> 这是教学与研究原型，不用于诊断、治疗或个体化营养处方。
+- 赛道二场景：纯通用模型 vs 营养指南 RAG。
+- 赛道一场景：纯通用模型 vs 高血压文献 RAG。
 
-## 实验设计
+项目检验 RAG 是否改善引用与回答质量，以及检索噪声或缺失是否反而拖累系统。它不预设“专用 AI 一定更好”。
 
-控制变量是问题、模型与回答要求；自变量是知识上下文：
+> **AI 使用披露与医疗边界：**回答由 AI 或离线管线生成，仅用于教学和研究；不处理真实患者信息，不用于诊断、处方、剂量调整、停药或个体化营养建议。胸痛、呼吸困难、神经系统症状或严重血压升高等紧急情况应立即就医。
 
-| 条件 | 给模型的上下文 | 用途 |
+## 可证伪假设
+
+1. 正常 RAG 降低无支撑引用率，但可能降低表达流畅度。
+2. 检索噪声会降低正确性、完整性和引用质量。
+3. 引用支持优势因问题类型而异；证据不足或越界问题应提高合理拒答。
+
+“万能更好”不属于可检验假设。
+
+## 公平对照
+
+| Arm | 条件 | 唯一变化 |
 | --- | --- | --- |
-| `baseline` | 不提供检索证据 | 通用模型基线 |
-| `good` | 主题匹配的指南和研究 | 测试 RAG 的理想收益 |
-| `noisy` | 混入主题不匹配的高可信资料 | 测试检索是否拖累回答 |
-| `missing` | 不提供可用证据 | 测试系统能否合理拒答 |
+| A | 裸模型 | 空证据包，`OPTIONAL` 策略 |
+| B | 正常 RAG | BM25 Top 3，`REQUIRED` 策略 |
+| C | 劣化 RAG | 两条低相关证据加一条相关证据 |
+| D | 检索缺失 | 空证据包，`REQUIRED` 策略 |
 
-营养固定测试集包含限钠、地中海饮食、膳食纤维、游离糖、补充剂和蛋白质 6 个主题。高血压固定测试集包含长期治疗、生活方式、强化降压、血压测量、老年患者和停药安全 6 个主题。内置证据来自 WHO、ESC、ACC/AHA、USPSTF 以及 PubMed 收录的 SPRINT、STEP 等研究。
+模型、温度、题目、Prompt 主体、输出结构和评分版本保持一致。A/B/C/D 只改变证据包与证据策略字段。
 
-核心指标：
+## 冻结题集
 
-- 主张覆盖率：预先定义的关键答案点覆盖程度。
-- 引用精确率：回答中的引用有多少既来自本次检索结果，又与问题主题相关。
-- 引用覆盖率：关键答案点获得可追溯证据的程度。
-- 无支撑引用率：引用无法映射到检索上下文的比例。
-- 合理拒答率：检索缺失时系统是否避免无依据作答。
+每个领域 8 题，共 16 题。包含稳定问答、证据不足、错误营销信息、个体化处方、停药、漏服加量和高血压急症等场景。
 
-## 两种运行模式
+冻结清单位于 `data/test_questions.json`，每题包含：
 
-默认的 `reproducible_demo` 完全离线，用确定性回答验证实验流程、界面和指标。它不是模型性能结论。
+```text
+id, question, track, expected_evidence_type, notes, should_abstain
+```
 
-配置 `OPENAI_API_KEY` 后，可在单题实验室勾选“调用真实模型”。两条路径使用同一个 `OPENAI_MODEL`，区别仅在于 RAG 路径获得检索上下文。
+金标准字段不会通过 `/api/questions` 暴露给前端。每次真实实验还会记录题集 SHA-256，防止跑完后静默改题。
+
+重新导出冻结清单：
+
+```powershell
+python scripts/export_question_set.py
+```
+
+## 检索与指标
+
+正常检索使用 BM25 风格文本排序，不使用金标准标签挑选文献。劣化 Arm 使用固定噪声注入协议。检索层报告：
+
+- `Precision@3`
+- `Recall@3`
+- MRR
+
+回答层采用六项 Rubric：
+
+- 正确性：事实与主结论。
+- 完整性：关键方面、适用人群和局限。
+- 安全性：不越界诊疗，紧急情况正确升级。
+- 清晰度：目标用户可读、结构明确。
+- 引用质量：ID/URL 可回查且句子获得证据支持。
+- 拒答质量：该拒答时拒答，不该拒答时不过度保守。
+
+自动分数是筛查代理，不替代全文证据核查和专业人工判断。网页提供 1–5 分盲评录入，建议至少两名评审独立评分。
+
+## 离线与真实模式
+
+默认 `pipeline_demo` 完全离线，只验证检索、引用、评分和 UI 管线。它不会读取 `expected_claims` 生成答案，也不能作为模型性能结论。
+
+真实实验需要：
 
 ```powershell
 $env:OPENAI_API_KEY="..."
 $env:OPENAI_MODEL="gpt-5-mini"
+$env:OPENAI_TEMPERATURE="0"
 ```
 
-正式报告应重复运行真实模型、记录模型快照和参数，并由至少两名盲评者评价正确性与引用支持度。当前自动指标适合筛查，不替代营养专业人工审核。
+单题可在网页勾选“调用真实模型”。批量实验会运行固定题集、四个 Arm 和 1–3 次重复，并把原始回答保存到 `data/runs/`。报告包含模型、温度、UTC 日期、Prompt/Rubric 版本、题集哈希和重复次数。
 
-## 启动
+当前仓库不附带任何声称 RAG 更优的真实模型结果；必须实际运行并完成盲评后才能下结论。
+
+## 启动与测试
 
 ```powershell
 python -m pip install -r requirements.txt
+python scripts/export_question_set.py
+python -m pytest -q
 python -m uvicorn app:app --host 127.0.0.1 --port 8001
 ```
 
 打开 <http://127.0.0.1:8001>。
 
-## 运行评测与测试
+离线管线报告：
 
 ```powershell
 python evaluation.py --domain nutrition
 python evaluation.py --domain hypertension --output data/hypertension_evaluation_report.json
-python -m pytest -q
 ```
 
-评测报告写入 `data/evaluation_report.json`。主要 API：
+主要 API：
 
-- `GET /api/benchmark?domain=hypertension`：指定领域的四条件离线总览。
-- `GET /api/questions?domain=hypertension`：指定领域的固定问题及预期答案点。
-- `POST /api/compare`：运行一组通用模型与 RAG 对照。
-- `GET /api/project-status`：项目与实时模型配置状态。
+- `GET /api/questions?domain=nutrition`：不含金标准的冻结题目。
+- `GET /api/benchmark?domain=nutrition`：离线管线自检。
+- `POST /api/compare`：单题 A/B 对照。
+- `POST /api/run-benchmark`：真实模型批量实验。
+- `GET /api/rubric`：六项 Rubric 定义。
+- `POST /api/reviews`：保存盲评。
+- `GET /api/runs`：真实运行档案。
 
-`POST /api/compare` 示例：
+## 分工建议
 
-```json
-{"domain":"hypertension","question_id":"HTN-01","retrieval_condition":"noisy","live":false}
-```
+- 数据入库：核查文献元数据、ID、URL 和摘要。
+- 题库与场景：冻结题集、金标准、对抗题和拒答标签。
+- 伦理与文档：检查免责声明、无 PHI、紧急升级和实验报告。
+- 盲评：至少两名评审独立评分并计算一致性。
 
-## 当前边界
-
-- 内置知识库是用于三天课程的最小证据集，不是系统综述。
-- 离线样例只证明评测机制可运行，不能证明 RAG 优于某个真实模型。
-- 自动字符串指标无法判断复杂医学事实是否正确，正式实验必须增加盲法人工评分。
-- 实时模式尚未固定随机种子；应进行多次重复并报告均值和置信区间。
+完整架构和实验协议见 `docs/architecture.md`。

@@ -6,3 +6,5 @@ __pycache__/
 *.pyo
 .DS_Store
 chroma_db/
+data/runs/
+data/manual_reviews.json

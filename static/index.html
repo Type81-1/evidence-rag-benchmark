@@ -9,20 +9,22 @@
 <body>
   <header class="topbar">
     <div class="brand"><span class="brand-mark">EL</span><div><strong>EvidenceLab</strong><small>专用 AI 对照评测台</small></div></div>
-    <div class="run-state"><span></span><b id="mode-label">可复现实验样例</b></div>
+    <div class="run-state"><span></span><b id="mode-label">管线演示 · 非模型结论</b></div>
   </header>
+  <div class="ethics-bar"><b>AI 生成内容</b><span>教学研究用途</span><span>无真实 PHI</span><span>不作诊断/处方/停药决定</span><span>紧急危险信号请立即就医</span></div>
   <main>
     <aside class="rail">
       <p class="rail-label">实验导航</p>
       <a class="rail-item active" href="#overview">评测总览</a>
       <a class="rail-item" href="#lab">单题实验室</a>
+      <a class="rail-item" href="#review">盲评录入</a>
       <div class="rail-rule"></div>
-      <p class="rail-label">自变量</p>
-      <span class="topic"><i class="dot baseline"></i>纯通用模型</span>
-      <span class="topic"><i class="dot good"></i>优质检索</span>
-      <span class="topic"><i class="dot noisy"></i>噪声检索</span>
-      <span class="topic"><i class="dot missing"></i>检索缺失</span>
-      <div class="method-note">同一问题、同一任务格式，只改变是否提供证据及检索质量。</div>
+      <p class="rail-label">锁定设计</p>
+      <span class="topic"><i class="dot baseline"></i>A 裸模型</span>
+      <span class="topic"><i class="dot good"></i>B 正常 RAG</span>
+      <span class="topic"><i class="dot noisy"></i>C 劣化 RAG</span>
+      <span class="topic"><i class="dot missing"></i>D 检索缺失</span>
+      <div class="method-note">同模型、同温度、同 Prompt 版本。仅改变证据包与检索状态。</div>
     </aside>
 
     <div class="workspace">
@@ -32,48 +34,57 @@
           <button type="button" data-domain="hypertension">高血压临床</button>
         </div>
         <div class="page-head">
-          <div><p id="domain-eyebrow" class="eyebrow">TRACK 03 · NUTRITION RAG BENCHMARK</p><h1 id="domain-title">营养指南 RAG，真的更好吗？</h1><p id="domain-subtitle">把“更专业”拆成可测量的引用、完整性与失败边界。</p></div>
-          <div class="status-grid"><div><strong id="question-count">6</strong><span>固定问题</span></div><div><strong>4</strong><span>实验条件</span></div><div><strong>5</strong><span>核心指标</span></div></div>
+          <div><p id="domain-eyebrow" class="eyebrow">TRACK 03 · NUTRITION RAG BENCHMARK</p><h1 id="domain-title">营养指南 RAG，真的更好吗？</h1><p id="domain-subtitle">预注册题集、锁定变量，再检验引用、质量和失败边界。</p></div>
+          <div class="status-grid"><div><strong id="question-count">8</strong><span>冻结问题</span></div><div><strong>4</strong><span>实验 Arm</span></div><div><strong>6</strong><span>Rubric 维度</span></div></div>
         </div>
 
-        <div class="finding-strip" id="finding-strip"><span>正在计算实验总览…</span></div>
-
+        <div class="finding-strip" id="finding-strip"><span>正在验证实验管线…</span></div>
         <div class="summary-grid" id="summary-grid" aria-live="polite"></div>
+        <div class="metric-key"><b>六项 Rubric</b><span>正确性</span><span>完整性</span><span>安全性</span><span>清晰度</span><span>引用质量</span><span>拒答质量</span><p>离线数值仅验证评分管线，不代表真实模型性能。</p></div>
 
-        <div class="metric-key">
-          <div><b>主指标</b><span>主张覆盖率</span><span>引用精确率</span><span>引用覆盖率</span></div>
-          <div><b>风险指标</b><span>无支撑引用率</span><span>合理拒答率</span></div>
-          <p>所有数值均为 0–100%。离线样例用于验证实验管线，不能当作真实模型性能结论。</p>
+        <div class="run-register">
+          <div><b>实验登记</b><span id="run-meta">读取配置中…</span></div>
+          <label>重复次数<select id="repeat-count"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select></label>
+          <button id="run-full" type="button">运行真实批量实验</button>
         </div>
       </section>
 
       <section id="lab" class="section lab">
-        <div class="section-title"><div><p class="eyebrow">CASE LAB</p><h2>单题对照实验</h2></div><span class="step">选择问题 → 操纵检索 → 比较回答</span></div>
+        <div class="section-title"><div><p class="eyebrow">CASE LAB</p><h2>单题公平对照</h2></div><span class="step">冻结问题 → 操纵证据包 → 保存原始回答</span></div>
         <div class="controls">
           <label>测试问题<select id="question-select"></select></label>
-          <label>RAG 检索条件<select id="condition-select"><option value="good">优质检索</option><option value="noisy">噪声检索</option><option value="missing">检索缺失</option></select></label>
+          <label>RAG 检索条件<select id="condition-select"><option value="good">B · 正常检索</option><option value="noisy">C · 噪声检索</option><option value="missing">D · 检索缺失</option></select></label>
           <label class="live-toggle"><input id="live-mode" type="checkbox"><span>调用真实模型</span><small id="live-help">需要 API Key</small></label>
-          <button id="run" type="button">运行对照</button>
+          <button id="run" type="button">运行 A/B 对照</button>
         </div>
         <div id="notice" class="notice" hidden></div>
+        <div id="retrieval-diagnostic" class="retrieval-diagnostic" hidden></div>
 
         <div class="comparison" id="comparison" hidden>
           <article class="answer-panel baseline-panel">
-            <header><div><span class="model-tag">BASELINE</span><h3>纯通用模型</h3></div><span class="source-pill">无外部证据</span></header>
-            <div id="baseline-metrics" class="mini-metrics"></div>
-            <div id="baseline-answer" class="answer"></div>
+            <header><div><span class="model-tag">BLINDED ARM A</span><h3>纯通用模型</h3></div><span class="source-pill">证据包为空</span></header>
+            <div id="baseline-metrics" class="mini-metrics"></div><div id="baseline-answer" class="answer"></div>
           </article>
           <article class="answer-panel rag-panel">
-            <header><div><span class="model-tag">SPECIALIZED</span><h3 id="rag-panel-title">营养指南 RAG</h3></div><span id="rag-source-pill" class="source-pill">0 条证据</span></header>
-            <div id="rag-metrics" class="mini-metrics"></div>
-            <div id="rag-answer" class="answer"></div>
-            <div id="evidence-list" class="evidence-list"></div>
+            <header><div><span class="model-tag">BLINDED ARM B/C/D</span><h3 id="rag-panel-title">营养指南 RAG</h3></div><span id="rag-source-pill" class="source-pill">0 条证据</span></header>
+            <div id="rag-metrics" class="mini-metrics"></div><div id="rag-answer" class="answer"></div><div id="evidence-list" class="evidence-list"></div>
           </article>
         </div>
       </section>
+
+      <section id="review" class="section review-section">
+        <div class="section-title"><div><p class="eyebrow">BLINDED REVIEW</p><h2>六项人工盲评</h2></div><span class="step">建议至少两名评审独立评分</span></div>
+        <form id="review-form" class="review-form">
+          <label>评审代号<input id="reviewer" required maxlength="50" placeholder="Reviewer-01"></label>
+          <label>盲化 Arm<select id="review-arm"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></label>
+          <div id="rubric-inputs" class="rubric-inputs"></div>
+          <label class="review-notes">备注<textarea id="review-notes" rows="3" maxlength="1000"></textarea></label>
+          <button type="submit">保存评分</button><span id="review-status"></span>
+        </form>
+      </section>
     </div>
   </main>
-  <footer>教学与研究原型 · 不用于诊断、处方或个体化营养建议 · 所有结论需结合人工证据核查</footer>
+  <footer>AI 生成内容 · 教学与研究原型 · 无真实患者信息 · 不替代执业医师或营养专业人员意见 · 紧急情况立即就医</footer>
   <script src="/static/app.js"></script>
 </body>
 </html>

@@ -7,12 +7,15 @@ import math
 import os
 import platform
 import re
+import socket
+import sys
 from collections import Counter
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
 from typing import Callable
+from urllib.parse import urlparse
 
 
 PROMPT_VERSION = "evidence-gate-v2"
@@ -221,16 +224,62 @@ EVIDENCE_GATE={gate}
 {packet}"""
 
 
-def _call_model(prompt: str) -> str:
+def proxy_status() -> dict[str, object]:
+    proxy = os.getenv("OPENAI_PROXY") or os.getenv("HTTPS_PROXY") or os.getenv("https_proxy")
+    source = "environment" if proxy else None
+    if not proxy and sys.platform == "win32":
+        try:
+            import winreg
+
+            with winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\Microsoft\Windows\CurrentVersion\Internet Settings") as key:
+                enabled = int(winreg.QueryValueEx(key, "ProxyEnable")[0])
+                value = str(winreg.QueryValueEx(key, "ProxyServer")[0]) if enabled else ""
+                proxy = value.split(";", 1)[0] or None
+                source = "windows" if proxy else None
+        except (FileNotFoundError, OSError):
+            pass
+    if proxy and "://" not in proxy:
+        proxy = f"http://{proxy}"
+    reachable = None
+    if proxy:
+        parsed = urlparse(proxy)
+        try:
+            with socket.create_connection((parsed.hostname or "", parsed.port or 80), timeout=1.0):
+                reachable = True
+        except OSError:
+            reachable = False
+    return {"configured": bool(proxy), "reachable": reachable, "source": source, "url": proxy}
+
+
+def _openai_client(timeout: float, max_retries: int):
+    import httpx
     from openai import OpenAI
 
-    temperature = float(os.getenv("OPENAI_TEMPERATURE", "0"))
-    response = OpenAI(api_key=os.environ["OPENAI_API_KEY"]).responses.create(
-        model=os.getenv("OPENAI_MODEL", "gpt-5-mini"),
+    status = proxy_status()
+    http_client = httpx.Client(proxy=str(status["url"]), timeout=timeout) if status["configured"] and status["reachable"] else None
+    return OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=timeout, max_retries=max_retries, http_client=http_client)
+
+
+def _call_model(prompt: str) -> str:
+
+    model = os.getenv("OPENAI_MODEL", "gpt-5.6")
+    response = _openai_client(timeout=45.0, max_retries=1).responses.create(
+        model=model,
         input=prompt,
-        temperature=temperature,
+        reasoning={"effort": os.getenv("OPENAI_REASONING_EFFORT", "low")},
     )
     return response.output_text.strip()
+
+
+def test_model_connection() -> dict[str, str]:
+    model = os.getenv("OPENAI_MODEL", "gpt-5.6")
+    response = _openai_client(timeout=20.0, max_retries=0).responses.create(
+        model=model,
+        input="Reply with exactly: OK",
+        max_output_tokens=16,
+        reasoning={"effort": "none"},
+    )
+    return {"model": model, "response_id": response.id, "output": response.output_text.strip()}
 
 
 def _offline_answer(
@@ -396,8 +445,9 @@ def run_benchmark(
         "run_id": datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ"),
         "run_mode": "live_model" if live else "pipeline_demo",
         "domain": domain,
-        "model": os.getenv("OPENAI_MODEL", "gpt-5-mini") if live else None,
-        "temperature": float(os.getenv("OPENAI_TEMPERATURE", "0")) if live else None,
+        "model": os.getenv("OPENAI_MODEL", "gpt-5.6") if live else None,
+        "reasoning_effort": os.getenv("OPENAI_REASONING_EFFORT", "low") if live else None,
+        "temperature": None,
         "prompt_version": PROMPT_VERSION,
         "rubric_version": RUBRIC_VERSION,
         "retrieval_version": RETRIEVAL_VERSION,

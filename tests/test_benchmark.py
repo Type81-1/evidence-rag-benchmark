@@ -171,6 +171,34 @@ def test_live_batch_requires_key(monkeypatch) -> None:
     assert response.status_code == 400
 
 
+def test_model_config_uses_process_memory_and_validates_model(monkeypatch) -> None:
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    response = client.post("/api/model-config", json={"api_key":"sk-test-only-not-real","model":"gpt-5.6","reasoning_effort":"low"})
+    assert response.status_code == 200
+    assert response.json()["storage"] == "process_memory"
+    assert client.get("/api/project-status").json()["model"] == "gpt-5.6"
+    assert client.post("/api/model-config", json={"model":"unknown-model","reasoning_effort":"low"}).status_code == 400
+
+
+def test_connection_error_is_structured_json(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-only-not-real")
+    monkeypatch.setattr(app_module, "test_model_connection", lambda: (_ for _ in ()).throw(type("APIConnectionError", (Exception,), {})()))
+    monkeypatch.setattr(app_module, "proxy_status", lambda: {"configured": False, "reachable": None, "source": None, "url": None})
+    response = client.post("/api/model-connection-test")
+    assert response.status_code == 502
+    assert response.json()["detail"]["code"] == "APIConnectionError"
+    assert "DNS" in response.json()["detail"]["message"]
+
+
+def test_unreachable_system_proxy_has_actionable_error(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-only-not-real")
+    monkeypatch.setattr(app_module, "test_model_connection", lambda: (_ for _ in ()).throw(type("APIConnectionError", (Exception,), {})()))
+    monkeypatch.setattr(app_module, "proxy_status", lambda: {"configured": True, "reachable": False, "source": "windows", "url": "http://127.0.0.1:1"})
+    response = client.post("/api/model-connection-test")
+    assert response.status_code == 502
+    assert "启动代理客户端" in response.json()["detail"]["message"]
+
+
 def test_manual_blind_review_is_versioned_and_persisted(tmp_path: Path, monkeypatch) -> None:
     path = tmp_path / "reviews.json"
     monkeypatch.setattr(app_module, "REVIEWS_PATH", path)

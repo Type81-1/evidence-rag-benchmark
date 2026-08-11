@@ -77,9 +77,15 @@ python scripts/export_question_set.py
 
 ```powershell
 $env:OPENAI_API_KEY="..."
-$env:OPENAI_MODEL="gpt-5-mini"
-$env:OPENAI_TEMPERATURE="0"
+$env:OPENAI_MODEL="gpt-5.6"
+$env:OPENAI_REASONING_EFFORT="low"
 ```
+
+也可以在网页“实验登记”下方输入 Key、选择模型并点击“保存到本次服务”。网页配置只写入当前后端进程内存，输入框随后清空，不写入磁盘，也不会进入 Git。需要长期本机保存时，可在被 `.gitignore` 排除的 `.env` 中设置相同变量。官方模型目录确认 `gpt-5.6` 是 GPT-5.6 Sol 的 API 别名并支持 Responses API：<https://developers.openai.com/api/docs/models/gpt-5.6-sol>。
+
+“测试连接”只发送一个最小请求。如果提示无法连接 `api.openai.com`，应先修复本机 VPN/代理或 DNS；更换 Key 不能解决网络层 `APIConnectionError`。
+
+Windows 下后端会自动读取当前系统代理，并在代理端口可用时交给 OpenAI SDK。若页面提示“代理客户端未监听”，说明 Windows 仍保存着代理地址，但对应代理程序没有运行；启动代理客户端后即可重新测试，无需把代理地址写入仓库。
 
 单题可在网页勾选“调用真实模型”。批量实验会运行固定题集、四个 Arm 和 1–3 次重复，并把原始回答保存到 `data/runs/`。报告包含实际 Prompt、原始回答及哈希、完整检索排名、模型、温度、运行时、UTC 日期、Prompt/Rubric/检索版本、题集与语料库哈希和重复次数。
 
@@ -110,6 +116,8 @@ python evaluation.py --domain hypertension --output data/hypertension_evaluation
 - `GET /api/benchmark?domain=nutrition`：离线管线自检。
 - `POST /api/compare`：单题 A/B 对照。
 - `POST /api/run-benchmark`：真实模型批量实验。
+- `POST /api/model-config`：把 Key、模型和推理强度写入当前服务内存。
+- `POST /api/model-connection-test`：发送最小请求并返回结构化连接诊断。
 - `GET /api/rubric`：六项 Rubric 定义。
 - `POST /api/reviews`：保存盲评。
 - `GET /api/review-summary`：按回答哈希汇总均分、评审人数和平均绝对分歧。

@@ -47,6 +47,14 @@
           <label>重复次数<select id="repeat-count"><option value="1">1 次</option><option value="2">2 次</option><option value="3">3 次</option></select></label>
           <button id="run-full" type="button">运行真实批量实验</button>
         </div>
+        <form id="model-config-form" class="model-config">
+          <label>OpenAI API Key<input id="api-key" type="password" autocomplete="off" placeholder="sk-…"></label>
+          <label>模型<select id="model-select"><option value="gpt-5.6">GPT-5.6 Sol</option><option value="gpt-5.6-terra">GPT-5.6 Terra</option><option value="gpt-5.5">GPT-5.5</option><option value="gpt-5.4">GPT-5.4</option></select></label>
+          <label>推理强度<select id="reasoning-effort"><option value="none">None</option><option value="low" selected>Low</option><option value="medium">Medium</option><option value="high">High</option></select></label>
+          <button type="submit">保存到本次服务</button>
+          <button id="test-connection" type="button" class="secondary-button">测试连接</button>
+          <span id="model-config-status">Key 仅保存在本机服务内存</span>
+        </form>
       </section>
 
       <section id="lab" class="section lab">

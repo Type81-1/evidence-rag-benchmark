@@ -13,13 +13,17 @@ let displayedOutputs = {X:'baseline',Y:'rag'};
 
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function percent(value){return `${Math.round(Number(value||0)*100)}%`;}
+async function responseJson(response){const text=await response.text();try{return text?JSON.parse(text):{};}catch{return {detail:{code:`HTTP_${response.status}`,message:text.slice(0,240)||'服务返回了非 JSON 错误'}};}}
+function errorMessage(data,fallback='运行失败'){const detail=data?.detail;return typeof detail==='string'?detail:(detail?.message||fallback);}
 function renderMarkdown(value){return escapeHtml(value).replace(/^## (.+)$/gm,'<h4>$1</h4>').replace(/^- (.+)$/gm,'<p class="bullet">$1</p>').replace(/\[([A-Z]\d+)]/g,'<mark>[$1]</mark>').replace(/\n{2,}/g,'</p><p>').replace(/^/,'<p>').replace(/$/,'</p>');}
 function metricRows(metrics){return rubricKeys.map(key=>`<div class="mini-metric"><span>${metricLabels[key]}</span><b>${percent(metrics[key])}</b></div>`).join('');}
 
 async function loadStatus(){
   const data = await fetch('/api/project-status').then(r=>r.json());
-  $('#run-meta').textContent = `${data.model} · temperature ${data.temperature} · ${data.prompt_version} · ${data.rubric_version}`;
+  $('#run-meta').textContent = `${data.model} · reasoning ${data.reasoning_effort} · ${data.prompt_version} · ${data.rubric_version}`;
   $('#live-help').textContent = data.live_model_available ? `${data.model} 已配置` : '需要 API Key';
+  $('#model-select').value=data.model;$('#reasoning-effort').value=data.reasoning_effort;
+  if(data.proxy?.configured&&data.proxy.reachable===false)$('#model-config-status').textContent='Windows 代理已配置，但代理客户端未监听；请先启动代理客户端';
 }
 
 async function loadOverview(){
@@ -73,7 +77,7 @@ async function runComparison(){
   const button=$('#run'),notice=$('#notice');button.disabled=true;notice.hidden=false;notice.textContent='正在运行锁定 Prompt 的两条路径…';
   try{
     const response=await fetch('/api/compare',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:currentDomain,question_id:$('#question-select').value,retrieval_condition:$('#condition-select').value,live:$('#live-mode').checked})});
-    const data=await response.json();if(!response.ok)throw new Error(data.detail||'运行失败');
+    const data=await responseJson(response);if(!response.ok)throw new Error(errorMessage(data));
     currentComparison=data;
     $('#mode-label').textContent=data.run_mode==='live_model'?'真实模型运行':'管线演示 · 非模型结论';
     notice.textContent=`${data.question.id} · ${data.question.topic} · ${armLabels[data.condition][0]} · Prompt ${data.prompt_version}`;
@@ -94,7 +98,19 @@ async function switchDomain(domain){
 
 async function runFullBenchmark(){
   const button=$('#run-full');button.disabled=true;button.textContent='真实实验运行中…';
-  try{const response=await fetch('/api/run-benchmark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:currentDomain,repeats:Number($('#repeat-count').value)})});const data=await response.json();if(!response.ok)throw new Error(data.detail||'运行失败');$('#finding-strip').innerHTML=`<b>真实实验已保存</b><span>${escapeHtml(data.saved_to)} · ${data.model} · ${data.repeats} 次重复</span>`;}catch(error){$('#finding-strip').textContent=`真实实验未运行：${error.message}`;}finally{button.disabled=false;button.textContent='运行真实批量实验';}
+  try{const response=await fetch('/api/run-benchmark',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({domain:currentDomain,repeats:Number($('#repeat-count').value)})});const data=await responseJson(response);if(!response.ok)throw new Error(errorMessage(data));$('#finding-strip').innerHTML=`<b>真实实验已保存</b><span>${escapeHtml(data.saved_to)} · ${data.model} · ${data.repeats} 次重复</span>`;}catch(error){$('#finding-strip').textContent=`真实实验未运行：${error.message}`;}finally{button.disabled=false;button.textContent='运行真实批量实验';}
+}
+
+async function saveModelConfig(event){
+  event.preventDefault();const status=$('#model-config-status');status.textContent='正在保存配置…';
+  const key=$('#api-key').value.trim();const payload={model:$('#model-select').value,reasoning_effort:$('#reasoning-effort').value};if(key)payload.api_key=key;
+  const response=await fetch('/api/model-config',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await responseJson(response);$('#api-key').value='';
+  if(!response.ok){status.textContent=`保存失败：${errorMessage(data)}`;return;}status.textContent=`已保存到本次服务：${data.model} · reasoning ${data.reasoning_effort}`;await loadStatus();
+}
+
+async function testConnection(){
+  const button=$('#test-connection'),status=$('#model-config-status');button.disabled=true;status.textContent='正在连接 OpenAI…';
+  try{const response=await fetch('/api/model-connection-test',{method:'POST'});const data=await responseJson(response);if(!response.ok)throw new Error(errorMessage(data));status.textContent=`连接成功：${data.model} · ${data.output} · ${data.response_id}`;}catch(error){status.textContent=`连接失败：${error.message}`;}finally{button.disabled=false;}
 }
 
 function buildRubricInputs(){
@@ -106,5 +122,5 @@ async function saveReview(event){
   const response=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();$('#review-status').textContent=response.ok?`已保存，第 ${data.review_count} 条盲评`:`保存失败：${data.detail}`;
 }
 
-$('#run').addEventListener('click',runComparison);$('#run-full').addEventListener('click',runFullBenchmark);$('#review-form').addEventListener('submit',saveReview);document.querySelectorAll('[data-domain]').forEach(button=>button.addEventListener('click',()=>switchDomain(button.dataset.domain)));document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
+$('#run').addEventListener('click',runComparison);$('#run-full').addEventListener('click',runFullBenchmark);$('#model-config-form').addEventListener('submit',saveModelConfig);$('#test-connection').addEventListener('click',testConnection);$('#review-form').addEventListener('submit',saveReview);document.querySelectorAll('[data-domain]').forEach(button=>button.addEventListener('click',()=>switchDomain(button.dataset.domain)));document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
 buildRubricInputs();Promise.all([loadStatus(),loadOverview(),loadQuestions()]).then(runComparison).catch(error=>{$('#finding-strip').textContent=`加载失败：${error.message}`;});

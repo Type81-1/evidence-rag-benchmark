@@ -8,16 +8,19 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from dotenv import load_dotenv
 
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RETRIEVAL_VERSION, RUBRIC, RUBRIC_VERSION, RUNS_DIR
+from benchmark_engine import PROMPT_VERSION, RETRIEVAL_VERSION, RUBRIC, RUBRIC_VERSION, RUNS_DIR, proxy_status, test_model_connection
 
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
 REVIEWS_PATH = BASE_DIR / "data" / "manual_reviews.json"
+load_dotenv(BASE_DIR / ".env", override=False)
+SUPPORTED_MODELS = ("gpt-5.6", "gpt-5.6-terra", "gpt-5.5", "gpt-5.4")
 
 app = FastAPI(title="EvidenceLab RAG 评测台", version="3.0.0")
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
@@ -33,6 +36,12 @@ class CompareRequest(BaseModel):
 class BatchRequest(BaseModel):
     domain: str = Field(default="nutrition")
     repeats: int = Field(default=1, ge=1, le=3)
+
+
+class ModelConfigRequest(BaseModel):
+    api_key: SecretStr | None = None
+    model: str = Field(default="gpt-5.6")
+    reasoning_effort: str = Field(default="low", pattern="^(none|low|medium|high)$")
 
 
 class ReviewRequest(BaseModel):
@@ -85,13 +94,55 @@ def project_status() -> dict[str, object]:
         "blind_review_hides_gold": True,
         "rubric_dimensions": list(RUBRIC),
         "live_model_available": bool(os.getenv("OPENAI_API_KEY")),
-        "model": os.getenv("OPENAI_MODEL", "gpt-5-mini"),
-        "temperature": float(os.getenv("OPENAI_TEMPERATURE", "0")),
+        "model": os.getenv("OPENAI_MODEL", "gpt-5.6"),
+        "reasoning_effort": os.getenv("OPENAI_REASONING_EFFORT", "low"),
+        "supported_models": SUPPORTED_MODELS,
+        "proxy": {key: value for key, value in proxy_status().items() if key != "url"},
         "prompt_version": PROMPT_VERSION,
         "retrieval_version": RETRIEVAL_VERSION,
         "rubric_version": RUBRIC_VERSION,
         "ethics": {"no_phi": True, "ai_disclosure": True, "emergency_escalation": True},
     }
+
+
+def _model_error(exc: Exception) -> HTTPException:
+    name = type(exc).__name__
+    messages = {
+        "APIConnectionError": "无法连接 api.openai.com。请检查 VPN/代理和 DNS；当前错误与 API Key 是否正确无关。",
+        "AuthenticationError": "API Key 无效、已撤销或不属于可用项目。",
+        "PermissionDeniedError": "当前 API 项目无权使用所选模型，请换用有权限的模型。",
+        "NotFoundError": "所选模型不存在或当前 API 项目尚未获得访问权限。",
+        "RateLimitError": "请求达到速率或额度限制，请检查项目余额与用量层级。",
+        "BadRequestError": "OpenAI 拒绝了请求参数，请检查模型和推理强度设置。",
+    }
+    message = messages.get(name, "OpenAI 调用失败，请查看服务日志。")
+    proxy = proxy_status()
+    if name == "APIConnectionError" and proxy["configured"] and proxy["reachable"] is False:
+        message = "Windows 已配置代理，但代理端口没有程序监听。请先启动代理客户端，再测试连接。"
+    return HTTPException(status_code=502, detail={"code": name, "message": message, "proxy": {key: value for key, value in proxy.items() if key != "url"}})
+
+
+@app.post("/api/model-config")
+def configure_model(payload: ModelConfigRequest) -> dict[str, object]:
+    if payload.model not in SUPPORTED_MODELS:
+        raise HTTPException(status_code=400, detail="不支持的模型选项")
+    if payload.api_key and payload.api_key.get_secret_value().strip():
+        os.environ["OPENAI_API_KEY"] = payload.api_key.get_secret_value().strip()
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=400, detail="请输入 OpenAI API Key")
+    os.environ["OPENAI_MODEL"] = payload.model
+    os.environ["OPENAI_REASONING_EFFORT"] = payload.reasoning_effort
+    return {"configured": True, "model": payload.model, "reasoning_effort": payload.reasoning_effort, "storage": "process_memory"}
+
+
+@app.post("/api/model-connection-test")
+def model_connection_test() -> dict[str, object]:
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=400, detail="请先配置 OpenAI API Key")
+    try:
+        return {"connected": True, **test_model_connection()}
+    except Exception as exc:
+        raise _model_error(exc) from exc
 
 
 @app.get("/api/questions")
@@ -132,7 +183,7 @@ def run_live_benchmark(payload: BatchRequest) -> dict[str, object]:
     try:
         return _benchmark_module(payload.domain).run_benchmark(live=True, repeats=payload.repeats)
     except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"模型实验失败：{type(exc).__name__}") from exc
+        raise _model_error(exc) from exc
 
 
 @app.post("/api/compare")
@@ -147,6 +198,8 @@ def compare(payload: CompareRequest) -> dict[str, object]:
         return result
     except KeyError as exc:
         raise HTTPException(status_code=404, detail="未找到该测试问题") from exc
+    except Exception as exc:
+        raise _model_error(exc) from exc
 
 
 @app.get("/api/runs")

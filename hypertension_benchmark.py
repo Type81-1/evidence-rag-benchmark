@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchmark_engine import Evidence, make_domain_api, retrieve as retrieve_evidence
+from benchmark_engine import Evidence, load_catalog_evidence, make_domain_api, retrieve as retrieve_evidence
 
 
 SAFETY_NOTE = "仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。"
@@ -18,6 +18,10 @@ EVIDENCE = [
     Evidence("H9","emergency","When To Call 911 About High Blood Pressure","American Heart Association",2024,"血压严重升高并伴胸痛、呼吸困难、神经系统症状等可能是高血压急症，应立即呼叫急救服务，不应等待线上建议。","https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/hypertensive-crisis-when-you-should-call-911-for-high-blood-pressure","患者安全指南","AHA-CRISIS-2024",("190/120","胸痛","呼吸困难","立即就医","急救","高血压急症")),
     Evidence("H10","medication","WHO hypertension pharmacological treatment recommendations","WHO",2021,"降压药的选择和剂量调整需要结合既往用药、合并症、测量结果与不良反应，由临床人员评估；漏服后不应擅自加倍剂量。","https://www.who.int/publications/i/item/9789240033986","国际指南","WHO-HTN-DOSE-2021",("漏服","加倍剂量","药物剂量","处方","医生")),
 ]
+
+CURATED_EVIDENCE = EVIDENCE
+CATALOG_EVIDENCE = load_catalog_evidence()
+EVIDENCE = [*CURATED_EVIDENCE, *CATALOG_EVIDENCE]
 
 
 QUESTIONS: list[dict[str, object]] = [

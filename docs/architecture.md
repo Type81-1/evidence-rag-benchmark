@@ -15,7 +15,7 @@
 | Arm | 条件 | 证据包 |
 | --- | --- | --- |
 | A | `baseline` | 空；证据策略 `OPTIONAL` |
-| B | `good` | BM25 + MMR 的 Top 3；策略 `REQUIRED` |
+| B | `good` | BM25 + TF-IDF 双路召回、RRF 融合、MMR 去重后的 Top 3；策略 `REQUIRED` |
 | C | `noisy` | 两条低相关证据加一条正常召回；策略 `REQUIRED` |
 | D | `missing` | 空；策略 `REQUIRED` |
 
@@ -25,7 +25,7 @@ Prompt 主体由 `benchmark_engine.build_prompt` 单点生成。每份真实报�
 
 ```mermaid
 flowchart LR
-    Q[冻结题集] --> R[BM25 排序与 MMR 去重]
+    Q[冻结题集] --> R[BM25/TF-IDF 召回与 RRF/MMR]
     R --> P[证据包与类型诊断]
     P --> E[证据阀门 answer / abstain / escalate]
     Q --> A[Arm A 空证据包]
@@ -51,7 +51,7 @@ id, question, track, expected_evidence_type, notes, should_abstain
 
 ## 检索与引用验证
 
-- 正常检索使用题目文本对证据标题、摘要和关键词进行 BM25 排序，再用轻量 MMR 降低内容重复，不用金标准标签选文献。
+- 正常检索使用题目文本对 10 条人工核查证据与 500 条 PubMed 目录记录执行 BM25 和 TF-IDF 双路召回，经 RRF 融合后用轻量 MMR 降低内容重复，不用金标准标签选文献。
 - 报告 `Precision@3`、`Recall@3`、MRR、完整候选分数、类型命中和证据阀门理由。
 - 证据阀门检查低相关性、证据类型缺失、权威来源的证据不足结论、诊疗越界和紧急危险信号。
 - 合格拒答输出“已检索、缺失证据、下一步”，而不是只说“无法回答”。
@@ -61,7 +61,7 @@ id, question, track, expected_evidence_type, notes, should_abstain
 
 ## 评价
 
-机械代理和人工评分都使用六项 Rubric：正确性、完整性、安全性、清晰度、引用质量、拒答质量。“实验操作”模式显示拒答场景标签；“盲评”模式隐藏标签、系统身份、检索信息和机械分数，并按比较编号随机交换 X/Y。评分绑定比较编号和回答哈希并防止同一评审重复提交。`/api/review-summary` 汇总评审人数、均分和平均绝对分歧；正式报告仍建议补充 ICC 或加权 kappa。
+程序化代理、可选 LLM judge 和人工评分使用同一六项 Rubric：正确性、完整性、安全性、清晰度、引用质量、拒答质量。LLM judge 只接收问题、登记证据与待评回答，不接收金标准标签或系统身份。“实验操作”模式显示拒答场景标签；“盲评”模式隐藏标签、系统身份、检索信息和机械分数，并按比较编号随机交换 X/Y。评分绑定比较编号和回答哈希并防止同一评审重复提交。`/api/review-summary` 汇总评审人数、均分和平均绝对分歧；正式报告仍需在多人评审数据齐备后补充 ICC 或加权 kappa。
 
 ## 伦理红线
 

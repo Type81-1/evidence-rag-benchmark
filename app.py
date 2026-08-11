@@ -13,7 +13,8 @@ from dotenv import load_dotenv
 
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RETRIEVAL_VERSION, RUBRIC, RUBRIC_VERSION, RUNS_DIR, proxy_status, test_model_connection
+from benchmark_engine import LLM_JUDGE_VERSION, PROMPT_VERSION, RETRIEVAL_VERSION, RUBRIC, RUBRIC_VERSION, RUNS_DIR, judge_answer, proxy_status, test_model_connection
+from course_compliance import build_compliance_report
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -60,6 +61,13 @@ class ReviewRequest(BaseModel):
     notes: str = Field(default="", max_length=1000)
 
 
+class JudgeRequest(BaseModel):
+    domain: str = Field(default="nutrition")
+    question_id: str = Field(min_length=2, max_length=50)
+    answer: str = Field(min_length=20, max_length=10000)
+    evidence_ids: list[str] = Field(default_factory=list, max_length=10)
+
+
 def _benchmark_module(domain: str):
     if domain == "nutrition":
         return nutrition_benchmark
@@ -88,7 +96,13 @@ def project_status() -> dict[str, object]:
         "track": "赛道三：专用 AI vs 通用大模型对比评估",
         "domains": ["nutrition", "hypertension"],
         "question_count": len(nutrition_benchmark.QUESTIONS) + len(hypertension_benchmark.QUESTIONS),
-        "evidence_count": len(nutrition_benchmark.EVIDENCE) + len(hypertension_benchmark.EVIDENCE),
+        "evidence_count": len(nutrition_benchmark.CURATED_EVIDENCE) + len(hypertension_benchmark.CURATED_EVIDENCE) + len(nutrition_benchmark.CATALOG_EVIDENCE),
+        "curated_evidence_count": len(nutrition_benchmark.CURATED_EVIDENCE) + len(hypertension_benchmark.CURATED_EVIDENCE),
+        "catalog_document_count": len(nutrition_benchmark.CATALOG_EVIDENCE),
+        "retrieval_candidates_by_domain": {
+            "nutrition": len(nutrition_benchmark.EVIDENCE),
+            "hypertension": len(hypertension_benchmark.EVIDENCE),
+        },
         "conditions": ["baseline", "good", "noisy", "missing"],
         "retrieval_gate": True,
         "blind_review_hides_gold": True,
@@ -101,8 +115,14 @@ def project_status() -> dict[str, object]:
         "prompt_version": PROMPT_VERSION,
         "retrieval_version": RETRIEVAL_VERSION,
         "rubric_version": RUBRIC_VERSION,
+        "llm_judge_version": LLM_JUDGE_VERSION,
         "ethics": {"no_phi": True, "ai_disclosure": True, "emergency_escalation": True},
     }
+
+
+@app.get("/api/course-compliance")
+def course_compliance() -> dict[str, object]:
+    return build_compliance_report()
 
 
 def _model_error(exc: Exception) -> HTTPException:
@@ -141,6 +161,25 @@ def model_connection_test() -> dict[str, object]:
         raise HTTPException(status_code=400, detail="请先配置 OpenAI API Key")
     try:
         return {"connected": True, **test_model_connection()}
+    except Exception as exc:
+        raise _model_error(exc) from exc
+
+
+@app.post("/api/llm-judge")
+def llm_judge(payload: JudgeRequest) -> dict[str, object]:
+    if not os.getenv("OPENAI_API_KEY"):
+        raise HTTPException(status_code=400, detail="模型评审需要配置 OPENAI_API_KEY")
+    module = _benchmark_module(payload.domain)
+    try:
+        case = next(item for item in module.QUESTIONS if item["id"] == payload.question_id)
+    except StopIteration as exc:
+        raise HTTPException(status_code=404, detail="未找到该测试问题") from exc
+    registry = {item.id: item for item in module.EVIDENCE}
+    unknown = sorted(set(payload.evidence_ids) - set(registry))
+    if unknown:
+        raise HTTPException(status_code=400, detail=f"证据 ID 不在登记表中：{', '.join(unknown)}")
+    try:
+        return judge_answer(str(case["question"]), payload.answer, [registry[item_id] for item_id in payload.evidence_ids])
     except Exception as exc:
         raise _model_error(exc) from exc
 

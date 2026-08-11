@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from benchmark_engine import Evidence, make_domain_api, retrieve as retrieve_evidence
+from benchmark_engine import Evidence, load_catalog_evidence, make_domain_api, retrieve as retrieve_evidence
 
 
 SAFETY_NOTE = "仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明显不适时应及时就医。"
@@ -18,6 +18,10 @@ EVIDENCE = [
     Evidence("S9", "dash", "A Clinical Trial of the Effects of Dietary Patterns on Blood Pressure", "DASH Collaborative Research Group", 1997, "富含水果、蔬菜和低脂乳制品并减少饱和脂肪的 DASH 饮食可降低血压；效果来自整体饮食模式而非单一营养素。", "https://pubmed.ncbi.nlm.nih.gov/9099655/", "随机对照试验", "PMID:9099655", ("DASH", "水果", "蔬菜", "降低血压", "饮食模式")),
     Evidence("S10", "kidney", "KDIGO 2024 Clinical Practice Guideline for CKD", "KDIGO", 2024, "慢性肾病患者的蛋白质和电解质建议需要结合肾功能、营养状态、药物和并发症个体化，不能由通用问答给出精确每日处方。", "https://kdigo.org/guidelines/ckd-evaluation-and-management/", "临床指南", "KDIGO-CKD-2024", ("慢性肾病", "肾功能", "蛋白质", "个体化", "营养处方")),
 ]
+
+CURATED_EVIDENCE = EVIDENCE
+CATALOG_EVIDENCE = load_catalog_evidence()
+EVIDENCE = [*CURATED_EVIDENCE, *CATALOG_EVIDENCE]
 
 
 QUESTIONS: list[dict[str, object]] = [

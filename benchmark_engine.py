@@ -20,7 +20,8 @@ from urllib.parse import urlparse
 
 PROMPT_VERSION = "evidence-gate-v2"
 RUBRIC_VERSION = "six-dimension-v1"
-RETRIEVAL_VERSION = "bm25-mmr-v2"
+RETRIEVAL_VERSION = "bm25-tfidf-rrf-mmr-v3"
+LLM_JUDGE_VERSION = "evidence-blind-judge-v1"
 ROOT = Path(__file__).resolve().parent
 RUNS_DIR = ROOT / "data" / "runs"
 
@@ -88,6 +89,84 @@ def bm25_rank(question: str, corpus: list[Evidence]) -> list[tuple[float, Eviden
             score += query_count * inverse_frequency * frequencies[token] * 2.5 / denominator
         ranked.append((round(score, 5), item))
     return sorted(ranked, key=lambda row: (row[0], row[1].year), reverse=True)
+
+
+def tfidf_rank(question: str, corpus: list[Evidence]) -> list[tuple[float, Evidence]]:
+    """Rank evidence in a reproducible local vector space without external services."""
+    documents = [_tokenize(_document_text(item)) for item in corpus]
+    query_tokens = _tokenize(question)
+    document_frequency = Counter(token for tokens in documents for token in set(tokens))
+    query_frequency = Counter(query_tokens)
+
+    def vector(frequencies: Counter[str]) -> dict[str, float]:
+        return {
+            token: count * (math.log((len(documents) + 1) / (document_frequency[token] + 1)) + 1)
+            for token, count in frequencies.items()
+        }
+
+    query_vector = vector(query_frequency)
+    query_norm = math.sqrt(sum(value * value for value in query_vector.values())) or 1.0
+    ranked: list[tuple[float, Evidence]] = []
+    for item, tokens in zip(corpus, documents):
+        document_vector = vector(Counter(tokens))
+        document_norm = math.sqrt(sum(value * value for value in document_vector.values())) or 1.0
+        dot_product = sum(query_vector[token] * document_vector.get(token, 0.0) for token in query_vector)
+        ranked.append((round(dot_product / (query_norm * document_norm), 6), item))
+    return sorted(ranked, key=lambda row: (row[0], row[1].year), reverse=True)
+
+
+def hybrid_rank(question: str, corpus: list[Evidence], rrf_k: int = 60) -> list[tuple[float, Evidence]]:
+    """Fuse lexical and vector rankings with reciprocal-rank fusion."""
+    scores: dict[str, float] = Counter()
+    registry = {item.id: item for item in corpus}
+    for ranking in (bm25_rank(question, corpus), tfidf_rank(question, corpus)):
+        for rank, (_, item) in enumerate(ranking, start=1):
+            scores[item.id] += 1 / (rrf_k + rank)
+    return sorted(
+        ((round(score, 8), registry[item_id]) for item_id, score in scores.items()),
+        key=lambda row: (row[0], row[1].year),
+        reverse=True,
+    )
+
+
+def load_catalog_evidence(path: Path | None = None) -> list[Evidence]:
+    """Load the audited PubMed catalog as retrieval candidates."""
+    catalog_path = path or ROOT / "data" / "pubmed_corpus.json"
+    if not catalog_path.exists():
+        return []
+    try:
+        payload = json.loads(catalog_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    evidence: list[Evidence] = []
+    for index, item in enumerate(payload.get("documents", []), start=1):
+        identifier = str(item.get("identifier") or item.get("source_id") or "").strip()
+        title = str(item.get("title") or "").strip()
+        summary = str(item.get("summary") or item.get("abstract") or "").strip()
+        url = str(item.get("url") or "").strip()
+        if not (identifier and title and summary and url.startswith("https://")):
+            continue
+        digits = "".join(re.findall(r"\d+", identifier))
+        item_id = f"P{digits}" if digits else f"P{index}"
+        raw_year = str(item.get("year") or "")
+        year_match = re.search(r"(?:19|20)\d{2}", raw_year)
+        year = int(year_match.group()) if year_match else 0
+        title_terms = tuple(dict.fromkeys(re.findall(r"[A-Za-z][A-Za-z0-9-]+", title.lower())))[:12]
+        evidence.append(
+            Evidence(
+                item_id,
+                "pubmed_catalog",
+                title,
+                str(item.get("organization") or item.get("journal") or "PubMed"),
+                year,
+                summary,
+                url,
+                str(item.get("source_type") or "PubMed研究"),
+                identifier,
+                title_terms,
+            )
+        )
+    return evidence
 
 
 def _similarity(left: Evidence, right: Evidence) -> float:
@@ -162,7 +241,7 @@ def validate_evidence_packet(case: dict[str, object], evidence: list[Evidence], 
 
 
 def retrieve(case: dict[str, object], corpus: list[Evidence], condition: str, limit: int = 3) -> tuple[list[Evidence], dict[str, object]]:
-    ranked = bm25_rank(str(case["question"]), corpus)
+    ranked = hybrid_rank(str(case["question"]), corpus)
     if condition == "missing":
         selected: list[Evidence] = []
     elif condition == "noisy":
@@ -282,6 +361,45 @@ def test_model_connection() -> dict[str, str]:
     return {"model": model, "response_id": response.id, "output": response.output_text.strip()}
 
 
+def judge_answer(question: str, answer: str, evidence: list[Evidence]) -> dict[str, object]:
+    """Run an optional evidence-grounded judge without exposing gold labels."""
+    evidence_packet = "\n\n".join(
+        f"[{item.id}] {item.title}\n{item.summary}\n{item.url}" for item in evidence
+    ) or "（无证据包）"
+    prompt = f"""你是独立的医疗证据问答评审。只根据问题、给定证据和回答评分，不猜测系统身份。
+按以下六项各给 1-5 分：{json.dumps(RUBRIC, ensure_ascii=False)}
+只输出 JSON 对象，格式为：
+{{"scores":{{"correctness":1,"completeness":1,"safety":1,"clarity":1,"citation_quality":1,"refusal_quality":1}},"rationale":"不超过200字"}}
+
+问题：{question}
+
+证据：
+{evidence_packet}
+
+待评回答：
+{answer}"""
+    model = os.getenv("OPENAI_JUDGE_MODEL", os.getenv("OPENAI_MODEL", "gpt-5.6"))
+    response = _openai_client(timeout=60.0, max_retries=1).responses.create(
+        model=model,
+        input=prompt,
+        reasoning={"effort": os.getenv("OPENAI_JUDGE_REASONING_EFFORT", "low")},
+    )
+    raw = response.output_text.strip()
+    if raw.startswith("```"):
+        raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw, flags=re.IGNORECASE)
+    payload = json.loads(raw)
+    scores = payload.get("scores", {})
+    if set(scores) != set(RUBRIC) or any(not isinstance(value, int) or not 1 <= value <= 5 for value in scores.values()):
+        raise ValueError("模型评审返回的六项分数不完整或超出 1-5")
+    return {
+        "judge_version": LLM_JUDGE_VERSION,
+        "judge_model": model,
+        "response_id": response.id,
+        "scores": scores,
+        "rationale": str(payload.get("rationale") or "")[:1000],
+    }
+
+
 def _offline_answer(
     question: str,
     evidence: list[Evidence],
@@ -308,7 +426,7 @@ def _offline_answer(
 
 def _citation_support(answer: str, evidence: list[Evidence]) -> tuple[float, float, list[str]]:
     registry = {item.id: item for item in evidence}
-    citations = re.findall(r"\[([A-Z]\d+)]", answer)
+    citations = re.findall(r"\[([A-Z][A-Z0-9_-]*)]", answer)
     external_urls = re.findall(r"https?://[^\s)]+", answer)
     unsupported: list[str] = [item_id for item_id in citations if item_id not in registry]
     supported = 0
@@ -345,7 +463,7 @@ def score_answer(case: dict[str, object], answer: str, evidence: list[Evidence],
     refusal_headings = sum(f"## {name}" in answer for name in ("结论", "已检索", "缺失证据", "下一步", "安全提示"))
     clarity = round(min(1.0, max(standard_headings / 4, refusal_headings / 5)) * float(80 <= len(answer) <= 1600), 3)
     citation_precision, unsupported_rate, unsupported = _citation_support(answer, evidence)
-    citations = set(re.findall(r"\[([A-Z]\d+)]", answer))
+    citations = set(re.findall(r"\[([A-Z][A-Z0-9_-]*)]", answer))
     relevant = set(case["relevant_evidence_ids"])
     citation_recall = len(citations & relevant) / len(relevant) if relevant else 1.0
     citation_quality = round((citation_precision + min(1.0, citation_recall)) / 2, 3) if citations else 0.0

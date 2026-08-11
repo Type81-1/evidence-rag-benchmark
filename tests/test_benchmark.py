@@ -11,7 +11,8 @@ import app as app_module
 import benchmark_engine
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_prompt, score_answer, validate_evidence_packet
+from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_prompt, hybrid_rank, score_answer, validate_evidence_packet
+from course_compliance import build_compliance_report
 
 
 client = TestClient(app_module.app)
@@ -45,6 +46,19 @@ def test_bm25_ranking_uses_question_text_and_returns_scores() -> None:
     ranked = bm25_rank("限钠饮食能降低血压吗", nutrition_benchmark.EVIDENCE)
     assert ranked[0][0] > 0
     assert ranked[0][1].id in {"S1", "S2"}
+
+
+def test_500_document_catalog_is_integrated_with_hybrid_retrieval() -> None:
+    assert len(nutrition_benchmark.CATALOG_EVIDENCE) >= 500
+    assert len(hypertension_benchmark.CATALOG_EVIDENCE) >= 500
+    ranked = hybrid_rank("限钠饮食能降低血压吗", nutrition_benchmark.EVIDENCE)
+    assert len(ranked) == len(nutrition_benchmark.EVIDENCE)
+    assert ranked[0][0] > ranked[-1][0]
+
+
+def test_course_compliance_report_passes_static_checks() -> None:
+    report = build_compliance_report()
+    assert report["status"] == "pass", report
 
 
 def test_degraded_retrieval_reduces_precision_without_using_empty_context() -> None:
@@ -162,13 +176,29 @@ def test_api_hides_gold_answers_and_exposes_rubric_and_metadata() -> None:
     assert client.get("/api/rubric").json()["dimensions"] == RUBRIC
     status = client.get("/api/project-status").json()
     assert status["question_count"] == 16
+    assert status["catalog_document_count"] >= 500
     assert status["ethics"]["no_phi"] is True
+    assert client.get("/api/course-compliance").json()["status"] == "pass"
 
 
 def test_live_batch_requires_key(monkeypatch) -> None:
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     response = client.post("/api/run-benchmark", json={"domain": "nutrition", "repeats": 1})
     assert response.status_code == 400
+
+
+def test_llm_judge_requires_key_and_validates_registered_evidence(monkeypatch) -> None:
+    payload = {
+        "domain": "nutrition",
+        "question_id": "NUT-01",
+        "answer": "这是一个足够长度的测试回答，不应在没有密钥时调用外部模型。",
+        "evidence_ids": ["S1"],
+    }
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert client.post("/api/llm-judge", json=payload).status_code == 400
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-test-only-not-real")
+    unknown = {**payload, "evidence_ids": ["UNKNOWN"]}
+    assert client.post("/api/llm-judge", json=unknown).status_code == 400
 
 
 def test_model_config_uses_process_memory_and_validates_model(monkeypatch) -> None:

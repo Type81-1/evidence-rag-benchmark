@@ -21,9 +21,13 @@ class Evidence:
     summary: str
     url: str
     identifier: str
+    year: int | None = None
+    organization: str = ""
 
     def to_dict(self) -> dict[str, str]:
-        return asdict(self)
+        payload = asdict(self)
+        payload["source_id"] = self.identifier
+        return payload
 
 
 LOCAL_EVIDENCE = [
@@ -123,7 +127,22 @@ def search_pubmed(query: str, limit: int = 3) -> list[Evidence]:
         abstracts = ["".join(node.itertext()).strip() for node in article.findall(".//AbstractText")]
         summary = re.sub(r"\s+", " ", " ".join(abstracts)).strip()
         if pmid and summary:
-            results.append(Evidence("PubMed", title, summary[:1200], f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/", f"PMID:{pmid}"))
+            pub_date = article.findtext(".//JournalIssue/PubDate/Year", default="") or article.findtext(
+                ".//JournalIssue/PubDate/MedlineDate", default=""
+            )
+            year_match = re.search(r"(?:19|20)\d{2}", pub_date)
+            journal = article.findtext(".//Journal/Title", default="").strip()
+            results.append(
+                Evidence(
+                    "PubMed",
+                    title,
+                    summary,
+                    f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
+                    f"PMID:{pmid}",
+                    int(year_match.group()) if year_match else None,
+                    journal,
+                )
+            )
     return results
 
 
@@ -186,7 +205,18 @@ def search_local_corpus(question: str, limit: int = 3) -> list[Evidence]:
         if score:
             ranked.append((score, item))
     ranked.sort(key=lambda row: row[0], reverse=True)
-    return [Evidence(**item) for _, item in ranked[:limit]]
+    return [
+        Evidence(
+            source_type=str(item.get("source_type") or "PubMed"),
+            title=str(item.get("title") or ""),
+            summary=str(item.get("summary") or ""),
+            url=str(item.get("url") or ""),
+            identifier=str(item.get("identifier") or item.get("source_id") or ""),
+            year=int(item["year"]) if item.get("year") else None,
+            organization=str(item.get("organization") or ""),
+        )
+        for _, item in ranked[:limit]
+    ]
 
 
 def retrieve_evidence(question: str, online: bool = True) -> tuple[list[Evidence], list[str]]:

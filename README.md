@@ -22,7 +22,7 @@
 | Arm | 条件 | 唯一变化 |
 | --- | --- | --- |
 | A | 裸模型 | 空证据包，`OPTIONAL` 策略 |
-| B | 正常 RAG | BM25 + MMR Top 3，`REQUIRED` 策略 |
+| B | 正常 RAG | BM25 + TF-IDF 向量召回，经 RRF 融合与 MMR 去重后取 Top 3，`REQUIRED` 策略 |
 | C | 劣化 RAG | 两条低相关证据加一条相关证据 |
 | D | 检索缺失 | 空证据包，`REQUIRED` 策略 |
 
@@ -48,7 +48,7 @@ python scripts/export_question_set.py
 
 ## 检索与指标
 
-正常检索使用 BM25 风格文本排序和轻量 MMR 去重，不使用金标准标签挑选文献。劣化 Arm 使用固定噪声注入协议。证据阀门在生成前检查 Top-K 相对相关性、证据类型、权威来源的证据不足结论、个体化诊疗越界和紧急危险信号，并输出 `answer`、`abstain` 或 `escalate`。检索层报告：
+正常检索使用 BM25 与本地 TF-IDF 向量空间双路召回，经 RRF 融合和轻量 MMR 去重，不使用金标准标签挑选文献。每个领域的候选池由 10 条人工核查证据和 500 条 PubMed 目录记录组成；目录逐条保存 `source_id`、标题、摘要、年份、期刊、URL 和来源类型。劣化 Arm 使用固定噪声注入协议。证据阀门在生成前检查 Top-K 相对相关性、证据类型、权威来源的证据不足结论、个体化诊疗越界和紧急危险信号，并输出 `answer`、`abstain` 或 `escalate`。检索层报告：
 
 - `Precision@3`
 - `Recall@3`
@@ -67,7 +67,7 @@ python scripts/export_question_set.py
 - 引用质量：ID/URL 可回查且句子获得证据支持。
 - 拒答质量：该拒答时拒答，不该拒答时不过度保守。
 
-自动分数是筛查代理，不替代全文证据核查和专业人工判断。网页默认使用“实验操作”模式，显示证据不足、越界拒答和急症升级标签，便于设计者选题；切换“盲评”模式后隐藏这些标签、系统身份、检索诊断、证据包和机械分数，并随机交换匿名输出 X/Y。评分用比较编号与回答 SHA-256 绑定；建议至少两名评审独立评分。
+评估包含三条独立路径：程序化检索/引用指标、可选的证据盲法 LLM judge，以及人工盲评。自动分数和模型评审都是筛查代理，不替代全文证据核查和专业人工判断。网页默认使用“实验操作”模式，显示证据不足、越界拒答和急症升级标签，便于设计者选题；切换“盲评”模式后隐藏这些标签、系统身份、检索诊断、证据包和机械分数，并随机交换匿名输出 X/Y。评分用比较编号与回答 SHA-256 绑定；正式验收至少需要两名评审独立评分并报告一致性。
 
 ## 离线与真实模式
 
@@ -95,7 +95,9 @@ Windows 下后端会自动读取当前系统代理，并在代理端口可用时
 
 ```powershell
 python -m pip install -r requirements.txt
+python scripts/enrich_pubmed_metadata.py
 python scripts/export_question_set.py
+python course_compliance.py
 python -m pytest -q
 python -m uvicorn app:app --host 127.0.0.1 --port 8001
 ```
@@ -118,6 +120,8 @@ python evaluation.py --domain hypertension --output data/hypertension_evaluation
 - `POST /api/run-benchmark`：真实模型批量实验。
 - `POST /api/model-config`：把 Key、模型和推理强度写入当前服务内存。
 - `POST /api/model-connection-test`：发送最小请求并返回结构化连接诊断。
+- `GET /api/course-compliance`：逐项返回课件静态要求的机器可读检查结果。
+- `POST /api/llm-judge`：对登记题目、证据和回答执行可选的盲法模型评审。
 - `GET /api/rubric`：六项 Rubric 定义。
 - `POST /api/reviews`：保存盲评。
 - `GET /api/review-summary`：按回答哈希汇总均分、评审人数和平均绝对分歧。

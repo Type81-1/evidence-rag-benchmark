@@ -1,7 +1,7 @@
 const $ = selector => document.querySelector(selector);
 const rubricKeys = ['correctness','completeness','safety','clarity','citation_quality','refusal_quality'];
 const metricLabels = {correctness:'正确性',completeness:'完整性',safety:'安全性',clarity:'清晰度',citation_quality:'引用质量',refusal_quality:'拒答质量'};
-const armLabels = {baseline:['A · 裸模型','无检索，仅模型知识'],good:['B · 正常 RAG','BM25 正常召回'],noisy:['C · 劣化 RAG','注入低相关证据'],missing:['D · 检索缺失','空证据包与拒答测试']};
+const armLabels = {baseline:['A · 裸模型','无检索，仅模型知识'],good:['B · 正常 RAG','BM25 + TF-IDF 融合召回'],noisy:['C · 劣化 RAG','注入低相关证据'],missing:['D · 检索缺失','空证据包与拒答测试']};
 const domainCopy = {
   nutrition:{eyebrow:'TRACK 03 · NUTRITION RAG BENCHMARK',title:'营养指南 RAG，真的更好吗？',subtitle:'预注册题集、锁定变量，再检验引用、质量和失败边界。',rag:'营养指南 RAG'},
   hypertension:{eyebrow:'TRACK 03 · HYPERTENSION RAG BENCHMARK',title:'高血压文献 RAG，优势在哪里？',subtitle:'同模型同 Prompt，对照可追溯证据、噪声召回与安全拒答。',rag:'高血压文献 RAG'}

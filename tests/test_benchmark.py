@@ -11,7 +11,7 @@ import app as app_module
 import benchmark_engine
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_prompt, score_answer
+from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_prompt, score_answer, validate_evidence_packet
 
 
 client = TestClient(app_module.app)
@@ -38,6 +38,7 @@ def test_evidence_registry_has_traceable_identifiers_and_urls() -> None:
         assert len(corpus) >= 10
         assert len({item.id for item in corpus}) == len(corpus)
         assert all(item.identifier and item.url.startswith("https://") for item in corpus)
+        assert all(len(item.to_dict()["content_hash"]) == 64 for item in corpus)
 
 
 def test_bm25_ranking_uses_question_text_and_returns_scores() -> None:
@@ -52,7 +53,7 @@ def test_degraded_retrieval_reduces_precision_without_using_empty_context() -> N
     noisy_evidence, noisy_metrics = nutrition_benchmark.retrieve(case, "noisy")
     assert good_evidence and noisy_evidence
     assert noisy_metrics["precision_at_k"] < good_metrics["precision_at_k"]
-    assert set(noisy_metrics) == {"precision_at_k", "recall_at_k", "mrr"}
+    assert {"precision_at_k", "recall_at_k", "mrr", "selected_scores", "ranked_candidates", "validation"}.issubset(noisy_metrics)
 
 
 def test_fair_prompt_has_identical_instructions_and_only_packet_policy_differs() -> None:
@@ -63,7 +64,27 @@ def test_fair_prompt_has_identical_instructions_and_only_packet_policy_differs()
     assert baseline.split("EVIDENCE_POLICY=")[0] == rag.split("EVIDENCE_POLICY=")[0]
     assert "EVIDENCE_POLICY=OPTIONAL" in baseline
     assert "EVIDENCE_POLICY=REQUIRED" in rag
-    assert PROMPT_VERSION == "fair-ab-v1"
+    assert PROMPT_VERSION == "evidence-gate-v2"
+
+
+def test_evidence_gate_covers_low_similarity_type_mismatch_and_boundary() -> None:
+    case = nutrition_benchmark.QUESTIONS[0]
+    low = validate_evidence_packet(case, [nutrition_benchmark.EVIDENCE[0]], {"top_score_ratio": 0.1})
+    assert low["action"] == "abstain"
+    mismatch = validate_evidence_packet(
+        {**case, "expected_evidence_type": "系统综述"}, [nutrition_benchmark.EVIDENCE[0]], {"top_score_ratio": 1.0}
+    )
+    assert mismatch["action"] == "abstain"
+    boundary_case = nutrition_benchmark.QUESTIONS[-1]
+    boundary = validate_evidence_packet(boundary_case, [nutrition_benchmark.EVIDENCE[-1]], {"top_score_ratio": 1.0})
+    assert boundary["action"] == "abstain"
+
+
+def test_structured_refusal_explains_found_missing_and_next_search() -> None:
+    result = nutrition_benchmark.compare_question("NUT-08", "good")
+    assert result["rag"]["validation"]["action"] == "abstain"
+    for heading in ("## 已检索", "## 缺失证据", "## 下一步"):
+        assert heading in result["rag"]["answer"]
 
 
 def test_offline_generation_does_not_read_expected_claims() -> None:
@@ -111,6 +132,9 @@ def test_benchmark_records_metadata_and_all_arms() -> None:
     assert report["question_count"] == 8
     assert report["comparison_count"] == 24
     assert report["prompt_version"] == PROMPT_VERSION
+    assert report["corpus_hash"]
+    assert report["retrieval_version"]
+    assert report["ablation_factors"]["baseline_vs_rag"] == ["evidence_packet", "evidence_policy"]
     assert report["temperature"] is None
     assert set(report["summary"]) == {"baseline", "good", "noisy", "missing"}
     assert set(report["summary"]["good"]) == set(RUBRIC)
@@ -130,6 +154,11 @@ def test_live_batch_reuses_one_baseline_per_question(tmp_path: Path, monkeypatch
 def test_api_hides_gold_answers_and_exposes_rubric_and_metadata() -> None:
     questions = client.get("/api/questions?domain=nutrition").json()
     assert "expected_claims" not in questions[0]
+    assert "should_abstain" not in questions[0]
+    assert "expected_evidence_type" not in questions[0]
+    design_questions = client.get("/api/design/questions?domain=nutrition").json()
+    assert any(item["should_abstain"] for item in design_questions)
+    assert any(item["urgent"] for item in client.get("/api/design/questions?domain=hypertension").json())
     assert client.get("/api/rubric").json()["dimensions"] == RUBRIC
     status = client.get("/api/project-status").json()
     assert status["question_count"] == 16
@@ -145,12 +174,20 @@ def test_live_batch_requires_key(monkeypatch) -> None:
 def test_manual_blind_review_is_versioned_and_persisted(tmp_path: Path, monkeypatch) -> None:
     path = tmp_path / "reviews.json"
     monkeypatch.setattr(app_module, "REVIEWS_PATH", path)
-    payload = {"domain":"nutrition","question_id":"NUT-01","arm_code":"A","reviewer_alias":"R1","correctness":4,"completeness":4,"safety":5,"clarity":5,"citation_quality":2,"refusal_quality":4,"notes":"盲评"}
+    result = nutrition_benchmark.compare_question("NUT-01", "good")
+    payload = {"domain":"nutrition","question_id":"NUT-01","comparison_id":result["comparison_id"],"output_code":"X","answer_hash":result["baseline"]["answer_hash"],"reviewer_alias":"R1","correctness":4,"completeness":4,"safety":5,"clarity":5,"citation_quality":2,"refusal_quality":4,"notes":"盲评"}
     response = client.post("/api/reviews", json=payload)
     assert response.status_code == 200
     saved = client.get("/api/reviews").json()
     assert saved[0]["rubric_version"]
-    assert saved[0]["arm_code"] == "A"
+    assert saved[0]["output_code"] == "X"
+    assert saved[0]["answer_hash"] == result["baseline"]["answer_hash"]
+    assert client.post("/api/reviews", json=payload).status_code == 409
+    second = {**payload, "reviewer_alias": "R2", "correctness": 5}
+    assert client.post("/api/reviews", json=second).status_code == 200
+    summary = client.get("/api/review-summary").json()["outputs"][0]
+    assert summary["reviewer_count"] == 2
+    assert summary["mean_absolute_disagreement"] is not None
 
 
 def test_invalid_domain_and_condition_are_rejected() -> None:

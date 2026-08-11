@@ -22,11 +22,11 @@
 | Arm | 条件 | 唯一变化 |
 | --- | --- | --- |
 | A | 裸模型 | 空证据包，`OPTIONAL` 策略 |
-| B | 正常 RAG | BM25 Top 3，`REQUIRED` 策略 |
+| B | 正常 RAG | BM25 + MMR Top 3，`REQUIRED` 策略 |
 | C | 劣化 RAG | 两条低相关证据加一条相关证据 |
 | D | 检索缺失 | 空证据包，`REQUIRED` 策略 |
 
-模型、温度、题目、Prompt 主体、输出结构和评分版本保持一致。A/B/C/D 只改变证据包与证据策略字段。
+模型、温度、题目、Prompt 主体、输出结构和评分版本保持一致。A 与 RAG 同时改变证据包和证据策略，因此属于完整系统对照；B/C/D 使用相同受控 RAG Prompt，只改变检索结果，才用于估计检索质量的影响。报告会显式记录这些消融因素。
 
 ## 冻结题集
 
@@ -38,7 +38,7 @@
 id, question, track, expected_evidence_type, notes, should_abstain
 ```
 
-金标准字段不会通过 `/api/questions` 暴露给前端。每次真实实验还会记录题集 SHA-256，防止跑完后静默改题。
+金标准、应拒答标签和期望证据类型不会通过 `/api/questions` 暴露给前端。每次真实实验还会记录题集 SHA-256，防止跑完后静默改题。
 
 重新导出冻结清单：
 
@@ -48,11 +48,15 @@ python scripts/export_question_set.py
 
 ## 检索与指标
 
-正常检索使用 BM25 风格文本排序，不使用金标准标签挑选文献。劣化 Arm 使用固定噪声注入协议。检索层报告：
+正常检索使用 BM25 风格文本排序和轻量 MMR 去重，不使用金标准标签挑选文献。劣化 Arm 使用固定噪声注入协议。证据阀门在生成前检查 Top-K 相对相关性、证据类型、权威来源的证据不足结论、个体化诊疗越界和紧急危险信号，并输出 `answer`、`abstain` 或 `escalate`。检索层报告：
 
 - `Precision@3`
 - `Recall@3`
 - MRR
+- 完整候选排名与分数
+- 证据类型命中和阀门原因
+
+合格拒答必须说明已经检索到什么、缺少什么，以及下一步应补查哪类证据；紧急场景优先升级就医。
 
 回答层采用六项 Rubric：
 
@@ -63,7 +67,7 @@ python scripts/export_question_set.py
 - 引用质量：ID/URL 可回查且句子获得证据支持。
 - 拒答质量：该拒答时拒答，不该拒答时不过度保守。
 
-自动分数是筛查代理，不替代全文证据核查和专业人工判断。网页提供 1–5 分盲评录入，建议至少两名评审独立评分。
+自动分数是筛查代理，不替代全文证据核查和专业人工判断。网页默认使用“实验操作”模式，显示证据不足、越界拒答和急症升级标签，便于设计者选题；切换“盲评”模式后隐藏这些标签、系统身份、检索诊断、证据包和机械分数，并随机交换匿名输出 X/Y。评分用比较编号与回答 SHA-256 绑定；建议至少两名评审独立评分。
 
 ## 离线与真实模式
 
@@ -77,7 +81,7 @@ $env:OPENAI_MODEL="gpt-5-mini"
 $env:OPENAI_TEMPERATURE="0"
 ```
 
-单题可在网页勾选“调用真实模型”。批量实验会运行固定题集、四个 Arm 和 1–3 次重复，并把原始回答保存到 `data/runs/`。报告包含模型、温度、UTC 日期、Prompt/Rubric 版本、题集哈希和重复次数。
+单题可在网页勾选“调用真实模型”。批量实验会运行固定题集、四个 Arm 和 1–3 次重复，并把原始回答保存到 `data/runs/`。报告包含实际 Prompt、原始回答及哈希、完整检索排名、模型、温度、运行时、UTC 日期、Prompt/Rubric/检索版本、题集与语料库哈希和重复次数。
 
 当前仓库不附带任何声称 RAG 更优的真实模型结果；必须实际运行并完成盲评后才能下结论。
 
@@ -102,11 +106,13 @@ python evaluation.py --domain hypertension --output data/hypertension_evaluation
 主要 API：
 
 - `GET /api/questions?domain=nutrition`：不含金标准的冻结题目。
+- `GET /api/design/questions?domain=nutrition`：供实验设计者使用，包含拒答和证据类型标签。
 - `GET /api/benchmark?domain=nutrition`：离线管线自检。
 - `POST /api/compare`：单题 A/B 对照。
 - `POST /api/run-benchmark`：真实模型批量实验。
 - `GET /api/rubric`：六项 Rubric 定义。
 - `POST /api/reviews`：保存盲评。
+- `GET /api/review-summary`：按回答哈希汇总均分、评审人数和平均绝对分歧。
 - `GET /api/runs`：真实运行档案。
 
 ## 分工建议

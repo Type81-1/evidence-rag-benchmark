@@ -24,7 +24,7 @@
       <span class="topic"><i class="dot good"></i>B 正常 RAG</span>
       <span class="topic"><i class="dot noisy"></i>C 劣化 RAG</span>
       <span class="topic"><i class="dot missing"></i>D 检索缺失</span>
-      <div class="method-note">同模型、同温度、同 Prompt 版本。仅改变证据包与检索状态。</div>
+      <div class="method-note">A 与 RAG 是系统对照；B/C/D 在同一受控 RAG Prompt 下只改变检索结果。</div>
     </aside>
 
     <div class="workspace">
@@ -50,7 +50,8 @@
       </section>
 
       <section id="lab" class="section lab">
-        <div class="section-title"><div><p class="eyebrow">CASE LAB</p><h2>单题公平对照</h2></div><span class="step">冻结问题 → 操纵证据包 → 保存原始回答</span></div>
+        <div class="section-title"><div><p class="eyebrow">CASE LAB</p><h2>单题公平对照</h2></div><div class="view-mode" role="group" aria-label="界面模式"><button type="button" class="active" data-view="design">实验操作</button><button type="button" data-view="blind">盲评</button></div></div>
+        <div id="view-mode-note" class="mode-note">实验操作模式显示场景标签、系统身份和检索诊断。</div>
         <div class="controls">
           <label>测试问题<select id="question-select"></select></label>
           <label>RAG 检索条件<select id="condition-select"><option value="good">B · 正常检索</option><option value="noisy">C · 噪声检索</option><option value="missing">D · 检索缺失</option></select></label>
@@ -58,16 +59,17 @@
           <button id="run" type="button">运行 A/B 对照</button>
         </div>
         <div id="notice" class="notice" hidden></div>
-        <div id="retrieval-diagnostic" class="retrieval-diagnostic" hidden></div>
+        <div id="retrieval-diagnostic" class="retrieval-diagnostic design-only" hidden></div>
+        <div id="gate-diagnostic" class="retrieval-diagnostic design-only" hidden></div>
 
         <div class="comparison" id="comparison" hidden>
           <article class="answer-panel baseline-panel">
-            <header><div><span class="model-tag">BLINDED ARM A</span><h3>纯通用模型</h3></div><span class="source-pill">证据包为空</span></header>
-            <div id="baseline-metrics" class="mini-metrics"></div><div id="baseline-answer" class="answer"></div>
+            <header><div><span id="output-x-tag" class="model-tag">ARM A</span><h3 id="output-x-title">纯通用模型</h3></div><span id="output-x-pill" class="source-pill">证据包为空</span></header>
+            <div id="baseline-metrics" class="mini-metrics design-only"></div><div id="baseline-answer" class="answer"></div>
           </article>
           <article class="answer-panel rag-panel">
-            <header><div><span class="model-tag">BLINDED ARM B/C/D</span><h3 id="rag-panel-title">营养指南 RAG</h3></div><span id="rag-source-pill" class="source-pill">0 条证据</span></header>
-            <div id="rag-metrics" class="mini-metrics"></div><div id="rag-answer" class="answer"></div><div id="evidence-list" class="evidence-list"></div>
+            <header><div><span id="output-y-tag" class="model-tag">ARM B/C/D</span><h3 id="rag-panel-title">营养指南 RAG</h3></div><span id="rag-source-pill" class="source-pill">0 条证据</span></header>
+            <div id="rag-metrics" class="mini-metrics design-only"></div><div id="rag-answer" class="answer"></div><div id="evidence-list" class="evidence-list design-only"></div>
           </article>
         </div>
       </section>
@@ -76,7 +78,7 @@
         <div class="section-title"><div><p class="eyebrow">BLINDED REVIEW</p><h2>六项人工盲评</h2></div><span class="step">建议至少两名评审独立评分</span></div>
         <form id="review-form" class="review-form">
           <label>评审代号<input id="reviewer" required maxlength="50" placeholder="Reviewer-01"></label>
-          <label>盲化 Arm<select id="review-arm"><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select></label>
+          <label>匿名输出<select id="review-arm"><option value="X">X</option><option value="Y">Y</option></select></label>
           <div id="rubric-inputs" class="rubric-inputs"></div>
           <label class="review-notes">备注<textarea id="review-notes" rows="3" maxlength="1000"></textarea></label>
           <button type="submit">保存评分</button><span id="review-status"></span>

@@ -1,0 +1,379 @@
+{
+  "run_mode": "reproducible_demo",
+  "question_count": 6,
+  "comparison_count": 18,
+  "summary": {
+    "baseline": {
+      "claim_coverage": 0.67,
+      "citation_precision": 0.0,
+      "citation_coverage": 0.0,
+      "unsupported_citation_rate": 0.0,
+      "appropriate_refusal": 0.0
+    },
+    "good": {
+      "claim_coverage": 0.67,
+      "citation_precision": 1.0,
+      "citation_coverage": 0.72,
+      "unsupported_citation_rate": 0.0,
+      "appropriate_refusal": 0.0
+    },
+    "noisy": {
+      "claim_coverage": 0.56,
+      "citation_precision": 0.33,
+      "citation_coverage": 0.33,
+      "unsupported_citation_rate": 0.0,
+      "appropriate_refusal": 0.0
+    },
+    "missing": {
+      "claim_coverage": 0.0,
+      "citation_precision": 0.0,
+      "citation_coverage": 0.0,
+      "unsupported_citation_rate": 0.0,
+      "appropriate_refusal": 1.0
+    }
+  },
+  "cases": [
+    {
+      "question_id": "HTN-01",
+      "topic": "长期治疗",
+      "condition": "good",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.67,
+        "citation_precision": 1.0,
+        "citation_coverage": 0.67,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-01",
+      "topic": "长期治疗",
+      "condition": "noisy",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.33,
+        "citation_precision": 0.33,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-01",
+      "topic": "长期治疗",
+      "condition": "missing",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 1.0
+      }
+    },
+    {
+      "question_id": "HTN-02",
+      "topic": "生活方式",
+      "condition": "good",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.67,
+        "citation_precision": 1.0,
+        "citation_coverage": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-02",
+      "topic": "生活方式",
+      "condition": "noisy",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.33,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-02",
+      "topic": "生活方式",
+      "condition": "missing",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 1.0
+      }
+    },
+    {
+      "question_id": "HTN-03",
+      "topic": "强化降压",
+      "condition": "good",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 1.0,
+        "citation_precision": 1.0,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-03",
+      "topic": "强化降压",
+      "condition": "noisy",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 1.0,
+        "citation_precision": 0.33,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-03",
+      "topic": "强化降压",
+      "condition": "missing",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 1.0
+      }
+    },
+    {
+      "question_id": "HTN-04",
+      "topic": "血压测量",
+      "condition": "good",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.33,
+        "citation_precision": 1.0,
+        "citation_coverage": 0.67,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-04",
+      "topic": "血压测量",
+      "condition": "noisy",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.33,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-04",
+      "topic": "血压测量",
+      "condition": "missing",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 1.0
+      }
+    },
+    {
+      "question_id": "HTN-05",
+      "topic": "老年高血压",
+      "condition": "good",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 1.0,
+        "citation_precision": 1.0,
+        "citation_coverage": 0.67,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-05",
+      "topic": "老年高血压",
+      "condition": "noisy",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 1.0,
+        "citation_precision": 0.33,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-05",
+      "topic": "老年高血压",
+      "condition": "missing",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 1.0
+      }
+    },
+    {
+      "question_id": "HTN-06",
+      "topic": "停药安全",
+      "condition": "good",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.33,
+        "citation_precision": 1.0,
+        "citation_coverage": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-06",
+      "topic": "停药安全",
+      "condition": "noisy",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.33,
+        "citation_precision": 0.33,
+        "citation_coverage": 0.33,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      }
+    },
+    {
+      "question_id": "HTN-06",
+      "topic": "停药安全",
+      "condition": "missing",
+      "baseline": {
+        "claim_coverage": 0.67,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 0.0
+      },
+      "rag": {
+        "claim_coverage": 0.0,
+        "citation_precision": 0.0,
+        "citation_coverage": 0.0,
+        "unsupported_citation_rate": 0.0,
+        "appropriate_refusal": 1.0
+      }
+    }
+  ]
+}

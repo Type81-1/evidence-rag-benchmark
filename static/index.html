@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>EvidenceLab · RAG 对照评测台</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">EL</span><div><strong>EvidenceLab</strong><small>专用 AI 对照评测台</small></div></div>
+    <div class="run-state"><span></span><b id="mode-label">可复现实验样例</b></div>
+  </header>
+  <main>
+    <aside class="rail">
+      <p class="rail-label">实验导航</p>
+      <a class="rail-item active" href="#overview">评测总览</a>
+      <a class="rail-item" href="#lab">单题实验室</a>
+      <div class="rail-rule"></div>
+      <p class="rail-label">自变量</p>
+      <span class="topic"><i class="dot baseline"></i>纯通用模型</span>
+      <span class="topic"><i class="dot good"></i>优质检索</span>
+      <span class="topic"><i class="dot noisy"></i>噪声检索</span>
+      <span class="topic"><i class="dot missing"></i>检索缺失</span>
+      <div class="method-note">同一问题、同一任务格式，只改变是否提供证据及检索质量。</div>
+    </aside>
+
+    <div class="workspace">
+      <section id="overview" class="section overview">
+        <div class="domain-switch" role="group" aria-label="选择实验域">
+          <button type="button" class="active" data-domain="nutrition">饮食营养</button>
+          <button type="button" data-domain="hypertension">高血压临床</button>
+        </div>
+        <div class="page-head">
+          <div><p id="domain-eyebrow" class="eyebrow">TRACK 03 · NUTRITION RAG BENCHMARK</p><h1 id="domain-title">营养指南 RAG，真的更好吗？</h1><p id="domain-subtitle">把“更专业”拆成可测量的引用、完整性与失败边界。</p></div>
+          <div class="status-grid"><div><strong id="question-count">6</strong><span>固定问题</span></div><div><strong>4</strong><span>实验条件</span></div><div><strong>5</strong><span>核心指标</span></div></div>
+        </div>
+
+        <div class="finding-strip" id="finding-strip"><span>正在计算实验总览…</span></div>
+
+        <div class="summary-grid" id="summary-grid" aria-live="polite"></div>
+
+        <div class="metric-key">
+          <div><b>主指标</b><span>主张覆盖率</span><span>引用精确率</span><span>引用覆盖率</span></div>
+          <div><b>风险指标</b><span>无支撑引用率</span><span>合理拒答率</span></div>
+          <p>所有数值均为 0–100%。离线样例用于验证实验管线，不能当作真实模型性能结论。</p>
+        </div>
+      </section>
+
+      <section id="lab" class="section lab">
+        <div class="section-title"><div><p class="eyebrow">CASE LAB</p><h2>单题对照实验</h2></div><span class="step">选择问题 → 操纵检索 → 比较回答</span></div>
+        <div class="controls">
+          <label>测试问题<select id="question-select"></select></label>
+          <label>RAG 检索条件<select id="condition-select"><option value="good">优质检索</option><option value="noisy">噪声检索</option><option value="missing">检索缺失</option></select></label>
+          <label class="live-toggle"><input id="live-mode" type="checkbox"><span>调用真实模型</span><small id="live-help">需要 API Key</small></label>
+          <button id="run" type="button">运行对照</button>
+        </div>
+        <div id="notice" class="notice" hidden></div>
+
+        <div class="comparison" id="comparison" hidden>
+          <article class="answer-panel baseline-panel">
+            <header><div><span class="model-tag">BASELINE</span><h3>纯通用模型</h3></div><span class="source-pill">无外部证据</span></header>
+            <div id="baseline-metrics" class="mini-metrics"></div>
+            <div id="baseline-answer" class="answer"></div>
+          </article>
+          <article class="answer-panel rag-panel">
+            <header><div><span class="model-tag">SPECIALIZED</span><h3 id="rag-panel-title">营养指南 RAG</h3></div><span id="rag-source-pill" class="source-pill">0 条证据</span></header>
+            <div id="rag-metrics" class="mini-metrics"></div>
+            <div id="rag-answer" class="answer"></div>
+            <div id="evidence-list" class="evidence-list"></div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer>教学与研究原型 · 不用于诊断、处方或个体化营养建议 · 所有结论需结合人工证据核查</footer>
+  <script src="/static/app.js"></script>
+</body>
+</html>

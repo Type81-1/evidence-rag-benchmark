@@ -1,0 +1,14 @@
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+requests>=2.32,<3.0
+pydantic>=2.8,<3.0
+python-dotenv>=1.0,<2.0
+openai>=1.0,<3.0
+pytest>=8.0,<9.0
+
+# Legacy vector RAG modules (vector_db.py and rag.py)
+chromadb>=1.1,<2.0
+sentence-transformers>=3.0,<6.0
+beautifulsoup4>=4.12,<5.0
+pymupdf>=1.24,<2.0
+tiktoken>=0.7,<1.0

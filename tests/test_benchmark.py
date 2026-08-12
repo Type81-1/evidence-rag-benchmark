@@ -385,6 +385,24 @@ def test_d2_skill_agent_trace_and_urgent_branch() -> None:
     assert len(result["trace"]) <= MAX_AGENT_STEPS
     assert all(set(row) >= {"step", "tool", "input", "observation", "decision", "timestamp"} for row in result["trace"])
     assert "chain of thought" in result["trace_policy"]
+    assert result["question"] == hypertension_benchmark.QUESTIONS[6]["question"]
+    assert result["trace"][0]["observation"]["question"] == result["question"]
+    assert result["trace"][0]["observation"]["evidence"]
+    assert result["trace"][2]["observation"]["answer_preview"]
+
+
+def test_d2_single_agent_trace_outputs_change_with_the_selected_question() -> None:
+    from d2_agent import run_agent
+
+    normal = run_agent("nutrition", "NUT-01", "good")
+    boundary = run_agent("nutrition", "NUT-08", "good")
+    assert normal["question"] != boundary["question"]
+    assert normal["action"] == "answer"
+    assert boundary["action"] == "abstain"
+    assert normal["trace"][0]["observation"]["evidence"] != boundary["trace"][0]["observation"]["evidence"]
+    assert normal["trace"][1]["decision"] != boundary["trace"][1]["decision"]
+    assert normal["trace"][2]["observation"]["answer_preview"] != boundary["trace"][2]["observation"]["answer_preview"]
+    assert normal["answer"] != boundary["answer"]
 
 
 def test_d2_multi_agent_preserves_complete_sample_chain_and_boundaries() -> None:

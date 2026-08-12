@@ -185,22 +185,75 @@ def run_agent(domain: str, question_id: str, condition: str = "good") -> dict[st
     search = execute_tool("search_evidence", {"domain": domain, "question_id": question_id, "condition": condition, "limit": 3})
     evidence = list(search.get("results") or [])
     gate = (search.get("diagnostics") or {}).get("validation") or {"action": "abstain", "reasons": ["retrieval failed"]}
-    trace.append(_trace(1, "search_evidence", {"domain": domain, "question_id": question_id, "condition": condition, "limit": 3}, {"status": search["status"], "result_count": len(evidence), "gate": gate}, "grade evidence" if evidence else "stop with evidence-aware refusal"))
+    trace.append(_trace(
+        1,
+        "search_evidence",
+        {"domain": domain, "question_id": question_id, "question": case["question"], "condition": condition, "limit": 3},
+        {
+            "status": search["status"],
+            "question": case["question"],
+            "result_count": len(evidence),
+            "evidence": [
+                {
+                    "chunk_id": item["chunk_id"],
+                    "title": item["title"],
+                    "quality": item["quality"],
+                    "organization": item["organization"],
+                    "year": item["year"],
+                }
+                for item in evidence
+            ],
+            "gate": gate,
+        },
+        (
+            f"检索到 {len(evidence)} 条登记证据；门控决定为 {gate.get('action')}。"
+            if evidence
+            else f"当前问题未检索到登记证据；门控决定为 {gate.get('action')}。"
+        ),
+    ))
 
     grade = execute_tool("assess_evidence_grade", {"evidence": evidence})
-    trace.append(_trace(2, "assess_evidence_grade", {"evidence_count": len(evidence)}, {"status": grade["status"], "strongest_grade": grade.get("strongest_grade"), "adequate": grade.get("adequate_for_general_answer")}, "draft grounded answer" if evidence else "draft refusal"))
+    trace.append(_trace(
+        2,
+        "assess_evidence_grade",
+        {"question_id": question_id, "evidence_ids": [item["chunk_id"] for item in evidence]},
+        {
+            "status": grade["status"],
+            "items": grade.get("items", []),
+            "strongest_grade": grade.get("strongest_grade"),
+            "adequate": grade.get("adequate_for_general_answer"),
+            "limitations": grade.get("limitations", []),
+        },
+        (
+            f"最高证据等级为 {grade.get('strongest_grade')}，进入针对“{case['topic']}”的有引用回答。"
+            if evidence and gate.get("action") == "answer"
+            else f"门控要求 {gate.get('action')}，生成说明检索结果、缺口和下一步的受控回答。"
+        ),
+    ))
 
     evidence_objects = _evidence_from_payload(evidence)
     result = module.compare_question(question_id, condition, live=False)
     draft = str(result["rag"]["answer"])
     citation_check = execute_tool("verify_citations", {"answer": draft, "evidence": evidence})
-    trace.append(_trace(3, "verify_citations", {"answer_hash": hashlib.sha256(draft.encode()).hexdigest(), "evidence_count": len(evidence)}, citation_check, "return checked answer" if citation_check["status"] == "ok" or not evidence else "return guarded answer with verification warning"))
+    trace.append(_trace(
+        3,
+        "verify_citations",
+        {"question_id": question_id, "answer_hash": hashlib.sha256(draft.encode()).hexdigest(), "evidence_count": len(evidence)},
+        {**citation_check, "answer_preview": draft[:240]},
+        (
+            f"引用核验通过：{len(citation_check['cited_chunk_ids'])} 个引用均可回查，返回当前问题的回答。"
+            if citation_check["status"] == "ok"
+            else f"发现 {len(citation_check['unsupported'])} 个未支持引用，返回带核验警告的受控回答。"
+        ),
+    ))
     action = str(gate.get("action") or "abstain")
     return {
         "agent_version": AGENT_VERSION,
         "question_id": question_id,
         "domain": domain,
         "condition": condition,
+        "question": case["question"],
+        "topic": case["topic"],
         "action": action,
         "answer": draft,
         "evidence": [item.to_dict() for item in evidence_objects],

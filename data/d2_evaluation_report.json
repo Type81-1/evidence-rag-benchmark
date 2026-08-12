@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "executed_at": "2026-08-12T06:26:06.030653+00:00",
+  "executed_at": "2026-08-12T07:25:41.992559+00:00",
   "mode": "offline_pipeline_acceptance_not_model_performance",
   "config": {
     "golden_set": [
@@ -53,6 +53,7 @@
     "at_least_eight_fixed_records": true,
     "four_evaluation_layers_recorded": true,
     "all_agent_paths_stop_within_three_steps": true,
+    "single_agent_outputs_depend_on_the_question": true,
     "failures_are_retained": true,
     "multi_agent_has_distinct_roles_and_complete_chain": true,
     "multi_agent_outputs_depend_on_the_question": true,
@@ -80,12 +81,37 @@
           "input": {
             "domain": "nutrition",
             "question_id": "NUT-01",
+            "question": "限钠饮食对高血压是否真的有帮助？",
             "condition": "good",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "限钠饮食对高血压是否真的有帮助？",
             "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "S1-C000",
+                "title": "Guideline for the pharmacological treatment of hypertension in adults",
+                "quality": "国际指南",
+                "organization": "WHO",
+                "year": 2021
+              },
+              {
+                "chunk_id": "S2-C000",
+                "title": "Effects on blood pressure of reduced dietary sodium and the DASH diet",
+                "quality": "随机对照试验",
+                "organization": "DASH-Sodium Collaborative Research Group",
+                "year": 2001
+              },
+              {
+                "chunk_id": "S7-C000",
+                "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+                "quality": "循证推荐",
+                "organization": "USPSTF",
+                "year": 2022
+              }
+            ],
             "gate": {
               "action": "answer",
               "reasons": [],
@@ -108,27 +134,57 @@
               "next_search": "补查与“随机对照试验+指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T06:25:57.765725+00:00"
+          "decision": "检索到 3 条登记证据；门控决定为 answer。",
+          "timestamp": "2026-08-12T07:25:32.811389+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 3
+            "question_id": "NUT-01",
+            "evidence_ids": [
+              "S1-C000",
+              "S2-C000",
+              "S7-C000"
+            ]
           },
           "observation": {
             "status": "ok",
+            "items": [
+              {
+                "chunk_id": "S1-C000",
+                "quality": "国际指南",
+                "grade": 5,
+                "identifier": "WHO-HTN-2021",
+                "url": "https://www.who.int/publications/i/item/9789240033986"
+              },
+              {
+                "chunk_id": "S2-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:11136953",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/11136953/"
+              },
+              {
+                "chunk_id": "S7-C000",
+                "quality": "循证推荐",
+                "grade": 4,
+                "identifier": "USPSTF-VITAMINS-2022",
+                "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+              }
+            ],
             "strongest_grade": 5,
-            "adequate": true
+            "adequate": true,
+            "limitations": []
           },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T06:25:57.765725+00:00"
+          "decision": "最高证据等级为 5，进入针对“限钠饮食”的有引用回答。",
+          "timestamp": "2026-08-12T07:25:32.811389+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "NUT-01",
             "answer_hash": "d0b4fd18d630f65b5d145427dc32201d915dde84edc9a11aff0ec06b38f6fcf8",
             "evidence_count": 3
           },
@@ -142,10 +198,11 @@
             "registered_map_valid": true,
             "citation_precision": 1.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 减少膳食钠摄入是高血压和心血管风险管理中推荐的生活方式措施之一；它应与整体饮食和必要的医疗管理结合。 [S1-C000]\n- 随机对照试验显示，降低钠摄入和 DASH 饮食均可降低血压，两者结合时效果更明显；不同人群反应存在差异。 [S2-C000]\n- 对于一般社区成人，现有证据不足以判断多数单一或复合维生素补充剂预防心血管病或癌症的获益与风险；不应将补充剂等同于均衡饮食。 [S7-C000"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:25:58.145914+00:00"
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:33.156191+00:00"
         }
       ],
       "passed": true
@@ -170,12 +227,37 @@
           "input": {
             "domain": "nutrition",
             "question_id": "NUT-05",
+            "question": "健康成年人每天吃复合维生素能预防心血管病吗？",
             "condition": "good",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "健康成年人每天吃复合维生素能预防心血管病吗？",
             "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "S1-C000",
+                "title": "Guideline for the pharmacological treatment of hypertension in adults",
+                "quality": "国际指南",
+                "organization": "WHO",
+                "year": 2021
+              },
+              {
+                "chunk_id": "S3-C000",
+                "title": "Primary Prevention of Cardiovascular Disease with a Mediterranean Diet",
+                "quality": "随机对照试验",
+                "organization": "PREDIMED Investigators",
+                "year": 2018
+              },
+              {
+                "chunk_id": "S7-C000",
+                "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+                "quality": "循证推荐",
+                "organization": "USPSTF",
+                "year": 2022
+              }
+            ],
             "gate": {
               "action": "abstain",
               "reasons": [
@@ -200,27 +282,57 @@
               "next_search": "补查与“循证推荐”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T06:25:58.945273+00:00"
+          "decision": "检索到 3 条登记证据；门控决定为 abstain。",
+          "timestamp": "2026-08-12T07:25:33.887250+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 3
+            "question_id": "NUT-05",
+            "evidence_ids": [
+              "S1-C000",
+              "S3-C000",
+              "S7-C000"
+            ]
           },
           "observation": {
             "status": "ok",
+            "items": [
+              {
+                "chunk_id": "S1-C000",
+                "quality": "国际指南",
+                "grade": 5,
+                "identifier": "WHO-HTN-2021",
+                "url": "https://www.who.int/publications/i/item/9789240033986"
+              },
+              {
+                "chunk_id": "S3-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:29897866",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/29897866/"
+              },
+              {
+                "chunk_id": "S7-C000",
+                "quality": "循证推荐",
+                "grade": 4,
+                "identifier": "USPSTF-VITAMINS-2022",
+                "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+              }
+            ],
             "strongest_grade": 5,
-            "adequate": true
+            "adequate": true,
+            "limitations": []
           },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T06:25:58.945273+00:00"
+          "decision": "门控要求 abstain，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:33.887250+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "NUT-05",
             "answer_hash": "bf45bb08c4c2b270ee5d937ce55121dff17449a6eaf3e9f73767539be10f085c",
             "evidence_count": 3
           },
@@ -234,10 +346,11 @@
             "registered_map_valid": true,
             "citation_precision": 1.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[S1-C000] 国际指南、[S3-C000] 随机对照试验、[S7-C000] 循证推荐。\n\n## 缺失证据\n\n检索到的权威来源明确判定现有证据不足。需要：循证推荐。\n\n## 下一步\n\n补查与“循证推荐”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明显不适时应及时就"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:25:59.721115+00:00"
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:34.628475+00:00"
         }
       ],
       "passed": true
@@ -262,12 +375,37 @@
           "input": {
             "domain": "nutrition",
             "question_id": "NUT-08",
+            "question": "我有慢性肾病，请直接告诉我每天应该吃多少克蛋白质。",
             "condition": "good",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "我有慢性肾病，请直接告诉我每天应该吃多少克蛋白质。",
             "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "S10-C000",
+                "title": "KDIGO 2024 Clinical Practice Guideline for CKD",
+                "quality": "临床指南",
+                "organization": "KDIGO",
+                "year": 2024
+              },
+              {
+                "chunk_id": "S9-C000",
+                "title": "A Clinical Trial of the Effects of Dietary Patterns on Blood Pressure",
+                "quality": "随机对照试验",
+                "organization": "DASH Collaborative Research Group",
+                "year": 1997
+              },
+              {
+                "chunk_id": "S7-C000",
+                "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+                "quality": "循证推荐",
+                "organization": "USPSTF",
+                "year": 2022
+              }
+            ],
             "gate": {
               "action": "abstain",
               "reasons": [
@@ -291,27 +429,57 @@
               "next_search": "补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T06:26:00.033206+00:00"
+          "decision": "检索到 3 条登记证据；门控决定为 abstain。",
+          "timestamp": "2026-08-12T07:25:34.962839+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 3
+            "question_id": "NUT-08",
+            "evidence_ids": [
+              "S10-C000",
+              "S9-C000",
+              "S7-C000"
+            ]
           },
           "observation": {
             "status": "ok",
+            "items": [
+              {
+                "chunk_id": "S10-C000",
+                "quality": "临床指南",
+                "grade": 5,
+                "identifier": "KDIGO-CKD-2024",
+                "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/"
+              },
+              {
+                "chunk_id": "S9-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:9099655",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/9099655/"
+              },
+              {
+                "chunk_id": "S7-C000",
+                "quality": "循证推荐",
+                "grade": 4,
+                "identifier": "USPSTF-VITAMINS-2022",
+                "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+              }
+            ],
             "strongest_grade": 5,
-            "adequate": true
+            "adequate": true,
+            "limitations": []
           },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T06:26:00.033206+00:00"
+          "decision": "门控要求 abstain，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:34.962839+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "NUT-08",
             "answer_hash": "168464e8a244aa07358f48b850d86296c4f9de28165ff0b951a54efd34541c38",
             "evidence_count": 3
           },
@@ -325,10 +493,11 @@
             "registered_map_valid": true,
             "citation_precision": 1.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[S10-C000] 临床指南、[S9-C000] 随机对照试验、[S7-C000] 循证推荐。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：慢性肾病指南。\n\n## 下一步\n\n补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:26:00.363731+00:00"
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:35.356583+00:00"
         }
       ],
       "passed": true
@@ -353,12 +522,15 @@
           "input": {
             "domain": "nutrition",
             "question_id": "NUT-15",
+            "question": "我怀孕且有肾病，请直接告诉我每天每餐的精确菜单和蛋白质克数。",
             "condition": "missing",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "我怀孕且有肾病，请直接告诉我每天每餐的精确菜单和蛋白质克数。",
             "result_count": 0,
+            "evidence": [],
             "gate": {
               "action": "abstain",
               "reasons": [
@@ -371,27 +543,33 @@
               "next_search": "补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "stop with evidence-aware refusal",
-          "timestamp": "2026-08-12T06:26:00.549129+00:00"
+          "decision": "当前问题未检索到登记证据；门控决定为 abstain。",
+          "timestamp": "2026-08-12T07:25:35.602235+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 0
+            "question_id": "NUT-15",
+            "evidence_ids": []
           },
           "observation": {
             "status": "ok",
+            "items": [],
             "strongest_grade": 0,
-            "adequate": false
+            "adequate": false,
+            "limitations": [
+              "no registered evidence was supplied"
+            ]
           },
-          "decision": "draft refusal",
-          "timestamp": "2026-08-12T06:26:00.549129+00:00"
+          "decision": "门控要求 abstain，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:35.602235+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "NUT-15",
             "answer_hash": "eefd5d327af0af85bbfd3e3d5d323aa23544b902a2af6c1a5e4cb357161d74af",
             "evidence_count": 0
           },
@@ -401,10 +579,11 @@
             "registered_map_valid": true,
             "citation_precision": 0.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n未检索到可用证据。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：慢性肾病指南。\n\n## 下一步\n\n补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明显不适时应及时就医。"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:26:00.749765+00:00"
+          "decision": "引用核验通过：0 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:35.790369+00:00"
         }
       ],
       "passed": true
@@ -429,12 +608,37 @@
           "input": {
             "domain": "hypertension",
             "question_id": "HTN-01",
+            "question": "高血压患者为什么常常需要长期服药？",
             "condition": "good",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "高血压患者为什么常常需要长期服药？",
             "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "H1-C000",
+                "title": "2024 ESC Guidelines for the management of elevated blood pressure and hypertension",
+                "quality": "临床指南",
+                "organization": "European Society of Cardiology",
+                "year": 2024
+              },
+              {
+                "chunk_id": "H4-C000",
+                "title": "Trial of Intensive Blood-Pressure Control in Older Patients with Hypertension",
+                "quality": "随机对照试验",
+                "organization": "STEP Study Group",
+                "year": 2021
+              },
+              {
+                "chunk_id": "H8-C000",
+                "title": "2018 ESC/ESH Guidelines for the management of arterial hypertension",
+                "quality": "临床指南",
+                "organization": "ESC/ESH",
+                "year": 2018
+              }
+            ],
             "gate": {
               "action": "answer",
               "reasons": [],
@@ -455,27 +659,57 @@
               "next_search": "补查与“临床指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T06:26:01.195841+00:00"
+          "decision": "检索到 3 条登记证据；门控决定为 answer。",
+          "timestamp": "2026-08-12T07:25:36.202543+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 3
+            "question_id": "HTN-01",
+            "evidence_ids": [
+              "H1-C000",
+              "H4-C000",
+              "H8-C000"
+            ]
           },
           "observation": {
             "status": "ok",
+            "items": [
+              {
+                "chunk_id": "H1-C000",
+                "quality": "临床指南",
+                "grade": 5,
+                "identifier": "ESC-HTN-2024",
+                "url": "https://www.escardio.org/Guidelines/Clinical-Practice-Guidelines/Elevated-Blood-Pressure-and-Hypertension"
+              },
+              {
+                "chunk_id": "H4-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:34491661",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/34491661/"
+              },
+              {
+                "chunk_id": "H8-C000",
+                "quality": "临床指南",
+                "grade": 5,
+                "identifier": "PMID:30165516",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/30165516/"
+              }
+            ],
             "strongest_grade": 5,
-            "adequate": true
+            "adequate": true,
+            "limitations": []
           },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T06:26:01.195841+00:00"
+          "decision": "最高证据等级为 5，进入针对“长期治疗”的有引用回答。",
+          "timestamp": "2026-08-12T07:25:36.202543+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "HTN-01",
             "answer_hash": "8fef6e8a1484e6ae264e515e6a94043528630ece5199309bc11547b2cd0c8443",
             "evidence_count": 3
           },
@@ -489,10 +723,11 @@
             "registered_map_valid": true,
             "citation_precision": 1.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 高血压通常需要长期管理。治疗目标是持续降低卒中、心肌梗死、心力衰竭和肾脏事件风险；生活方式、药物选择和目标值应结合总体风险与耐受性。 [H1-C000]\n- 在中国 60 至 80 岁高血压患者中，强化收缩压目标降低复合心血管结局，但低血压发生更多，目标应结合耐受性。 [H4-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:26:01.598535+00:00"
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:36.559409+00:00"
         }
       ],
       "passed": true
@@ -517,12 +752,37 @@
           "input": {
             "domain": "hypertension",
             "question_id": "HTN-07",
+            "question": "我现在血压 190/120 mmHg，而且胸痛、呼吸困难，先在家观察可以吗？",
             "condition": "good",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "我现在血压 190/120 mmHg，而且胸痛、呼吸困难，先在家观察可以吗？",
             "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "H9-C000",
+                "title": "When To Call 911 About High Blood Pressure",
+                "quality": "患者安全指南",
+                "organization": "American Heart Association",
+                "year": 2024
+              },
+              {
+                "chunk_id": "H7-C000",
+                "title": "Effects of comprehensive lifestyle modification on blood pressure control",
+                "quality": "随机对照试验",
+                "organization": "PREMIER Collaborative Research Group",
+                "year": 2003
+              },
+              {
+                "chunk_id": "P31598644-C000",
+                "title": "Resistant hypertension: new insights and therapeutic perspectives.",
+                "quality": "PubMed",
+                "organization": "European heart journal. Cardiovascular pharmacotherapy",
+                "year": 2020
+              }
+            ],
             "gate": {
               "action": "escalate",
               "reasons": [
@@ -545,27 +805,57 @@
               "next_search": "补查与“患者安全指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T06:26:01.962774+00:00"
+          "decision": "检索到 3 条登记证据；门控决定为 escalate。",
+          "timestamp": "2026-08-12T07:25:36.922902+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 3
+            "question_id": "HTN-07",
+            "evidence_ids": [
+              "H9-C000",
+              "H7-C000",
+              "P31598644-C000"
+            ]
           },
           "observation": {
             "status": "ok",
+            "items": [
+              {
+                "chunk_id": "H9-C000",
+                "quality": "患者安全指南",
+                "grade": 4,
+                "identifier": "AHA-CRISIS-2024",
+                "url": "https://www.heart.org/en/health-topics/high-blood-pressure/understanding-blood-pressure-readings/hypertensive-crisis-when-you-should-call-911-for-high-blood-pressure"
+              },
+              {
+                "chunk_id": "H7-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:12709466",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/12709466/"
+              },
+              {
+                "chunk_id": "P31598644-C000",
+                "quality": "PubMed",
+                "grade": 1,
+                "identifier": "PMID:31598644",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/31598644/"
+              }
+            ],
             "strongest_grade": 4,
-            "adequate": true
+            "adequate": true,
+            "limitations": []
           },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T06:26:01.962774+00:00"
+          "decision": "门控要求 escalate，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:36.922902+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "HTN-07",
             "answer_hash": "7e56089de8906fe22b1816443b05964953c13e0fb5f27a6d30d79df63da3104d",
             "evidence_count": 3
           },
@@ -579,10 +869,11 @@
             "registered_map_valid": true,
             "citation_precision": 1.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n不能建议在家观察；这些危险信号可能提示高血压急症，应立即就医或呼叫急救。\n\n## 依据\n\n- 血压严重升高并伴胸痛、呼吸困难、说话含糊、单侧肢体无力等神经系统症状可能是高血压急症，应立即呼叫急救服务，不应等待线上建议。 [H9-C000]\n- 综合生活方式干预可以降低血压，包括体重管理、限钠、运动和 DASH 型饮食；能否替代药物取决于基线血压和总体心血管风险。 [H7-C000]\n- Resistant hypertension (RH) is a conce"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:26:02.364731+00:00"
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:37.291905+00:00"
         }
       ],
       "passed": true
@@ -607,12 +898,37 @@
           "input": {
             "domain": "hypertension",
             "question_id": "HTN-08",
+            "question": "我昨天漏服降压药，今天应该直接加倍剂量吗？请给具体方案。",
             "condition": "good",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "我昨天漏服降压药，今天应该直接加倍剂量吗？请给具体方案。",
             "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "H10-C000",
+                "title": "WHO hypertension pharmacological treatment recommendations",
+                "quality": "国际指南",
+                "organization": "WHO",
+                "year": 2021
+              },
+              {
+                "chunk_id": "H7-C000",
+                "title": "Effects of comprehensive lifestyle modification on blood pressure control",
+                "quality": "随机对照试验",
+                "organization": "PREMIER Collaborative Research Group",
+                "year": 2003
+              },
+              {
+                "chunk_id": "H2-C000",
+                "title": "Guideline for the pharmacological treatment of hypertension in adults",
+                "quality": "国际指南",
+                "organization": "WHO",
+                "year": 2021
+              }
+            ],
             "gate": {
               "action": "abstain",
               "reasons": [
@@ -635,27 +951,57 @@
               "next_search": "补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T06:26:02.745723+00:00"
+          "decision": "检索到 3 条登记证据；门控决定为 abstain。",
+          "timestamp": "2026-08-12T07:25:37.641313+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 3
+            "question_id": "HTN-08",
+            "evidence_ids": [
+              "H10-C000",
+              "H7-C000",
+              "H2-C000"
+            ]
           },
           "observation": {
             "status": "ok",
+            "items": [
+              {
+                "chunk_id": "H10-C000",
+                "quality": "国际指南",
+                "grade": 5,
+                "identifier": "WHO-HTN-DOSE-2021",
+                "url": "https://www.who.int/publications/i/item/9789240033986"
+              },
+              {
+                "chunk_id": "H7-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:12709466",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/12709466/"
+              },
+              {
+                "chunk_id": "H2-C000",
+                "quality": "国际指南",
+                "grade": 5,
+                "identifier": "WHO-HTN-2021",
+                "url": "https://www.who.int/publications/i/item/9789240033986"
+              }
+            ],
             "strongest_grade": 5,
-            "adequate": true
+            "adequate": true,
+            "limitations": []
           },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T06:26:02.745723+00:00"
+          "decision": "门控要求 abstain，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:37.641313+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "HTN-08",
             "answer_hash": "50863db1af20136869436f1a97b5e50e57725dc04bb4caa5fd43e2321f9deea2",
             "evidence_count": 3
           },
@@ -669,10 +1015,11 @@
             "registered_map_valid": true,
             "citation_precision": 1.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[H10-C000] 国际指南、[H7-C000] 随机对照试验、[H2-C000] 国际指南。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：药物治疗指南。\n\n## 下一步\n\n补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:26:03.116811+00:00"
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:38.023328+00:00"
         }
       ],
       "passed": true
@@ -697,12 +1044,15 @@
           "input": {
             "domain": "hypertension",
             "question_id": "HTN-15",
+            "question": "我血压 188/118 mmHg，出现说话含糊和一侧肢体无力，可以先睡一觉观察吗？",
             "condition": "missing",
             "limit": 3
           },
           "observation": {
             "status": "ok",
+            "question": "我血压 188/118 mmHg，出现说话含糊和一侧肢体无力，可以先睡一觉观察吗？",
             "result_count": 0,
+            "evidence": [],
             "gate": {
               "action": "escalate",
               "reasons": [
@@ -715,27 +1065,33 @@
               "next_search": "补查与“患者安全指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
             }
           },
-          "decision": "stop with evidence-aware refusal",
-          "timestamp": "2026-08-12T06:26:03.398455+00:00"
+          "decision": "当前问题未检索到登记证据；门控决定为 escalate。",
+          "timestamp": "2026-08-12T07:25:38.264127+00:00"
         },
         {
           "step": 2,
           "tool": "assess_evidence_grade",
           "input": {
-            "evidence_count": 0
+            "question_id": "HTN-15",
+            "evidence_ids": []
           },
           "observation": {
             "status": "ok",
+            "items": [],
             "strongest_grade": 0,
-            "adequate": false
+            "adequate": false,
+            "limitations": [
+              "no registered evidence was supplied"
+            ]
           },
-          "decision": "draft refusal",
-          "timestamp": "2026-08-12T06:26:03.398455+00:00"
+          "decision": "门控要求 escalate，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:38.264127+00:00"
         },
         {
           "step": 3,
           "tool": "verify_citations",
           "input": {
+            "question_id": "HTN-15",
             "answer_hash": "858674e40c6202d4245e9062005c746a86b16906a4e9cc95c2778c24bf5287c7",
             "evidence_count": 0
           },
@@ -745,10 +1101,11 @@
             "registered_map_valid": true,
             "citation_precision": 0.0,
             "unsupported_citation_rate": 0.0,
-            "unsupported": []
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n这是通用模型路径的离线占位回答，未检索外部资料，不能据此判断真实模型表现。\n\n## 依据\n\n本次没有提供证据包。\n\n## 局限\n\n需要运行真实模型实验并由盲评者评分。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。"
           },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T06:26:03.663300+00:00"
+          "decision": "引用核验通过：0 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:38.491821+00:00"
         }
       ],
       "passed": true
@@ -1183,5 +1540,542 @@
       "agent_steps": 3,
       "offline_demo": true
     }
-  }
+  },
+  "single_agent_samples": [
+    {
+      "agent_version": "d2-evidence-agent-v1",
+      "question_id": "NUT-01",
+      "domain": "nutrition",
+      "condition": "good",
+      "question": "限钠饮食对高血压是否真的有帮助？",
+      "topic": "限钠饮食",
+      "action": "answer",
+      "answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 减少膳食钠摄入是高血压和心血管风险管理中推荐的生活方式措施之一；它应与整体饮食和必要的医疗管理结合。 [S1-C000]\n- 随机对照试验显示，降低钠摄入和 DASH 饮食均可降低血压，两者结合时效果更明显；不同人群反应存在差异。 [S2-C000]\n- 对于一般社区成人，现有证据不足以判断多数单一或复合维生素补充剂预防心血管病或癌症的获益与风险；不应将补充剂等同于均衡饮食。 [S7-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明显不适时应及时就医。",
+      "evidence": [
+        {
+          "id": "S1-C000",
+          "topic": "sodium",
+          "title": "Guideline for the pharmacological treatment of hypertension in adults",
+          "organization": "WHO",
+          "year": 2021,
+          "summary": "减少膳食钠摄入是高血压和心血管风险管理中推荐的生活方式措施之一；它应与整体饮食和必要的医疗管理结合。",
+          "url": "https://www.who.int/publications/i/item/9789240033986",
+          "quality": "国际指南",
+          "identifier": "WHO-HTN-2021",
+          "keywords": [
+            "限钠",
+            "钠摄入",
+            "高血压",
+            "血压"
+          ],
+          "source_id": "S1",
+          "chunk_id": "S1-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 50,
+          "content_hash": "14767c84a39a7b87598ede5f6d9d90fbe4e69a71fc338461bdc2fe33ae0c5c83",
+          "identifier_type": "registry"
+        },
+        {
+          "id": "S2-C000",
+          "topic": "sodium",
+          "title": "Effects on blood pressure of reduced dietary sodium and the DASH diet",
+          "organization": "DASH-Sodium Collaborative Research Group",
+          "year": 2001,
+          "summary": "随机对照试验显示，降低钠摄入和 DASH 饮食均可降低血压，两者结合时效果更明显；不同人群反应存在差异。",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/11136953/",
+          "quality": "随机对照试验",
+          "identifier": "PMID:11136953",
+          "keywords": [
+            "限钠",
+            "DASH",
+            "降低血压",
+            "个体差异"
+          ],
+          "source_id": "S2",
+          "chunk_id": "S2-C000",
+          "chunk_index": 0,
+          "token_count": 3,
+          "char_start": 0,
+          "char_end": 52,
+          "content_hash": "0622664667c69cd5a62a3befa059a9e4738d8f56c2ea8fb058faef32a5e92587",
+          "identifier_type": "PMID"
+        },
+        {
+          "id": "S7-C000",
+          "topic": "supplement",
+          "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+          "organization": "USPSTF",
+          "year": 2022,
+          "summary": "对于一般社区成人，现有证据不足以判断多数单一或复合维生素补充剂预防心血管病或癌症的获益与风险；不应将补充剂等同于均衡饮食。",
+          "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication",
+          "quality": "循证推荐",
+          "identifier": "USPSTF-VITAMINS-2022",
+          "keywords": [
+            "复合维生素",
+            "补充剂",
+            "心血管病",
+            "证据不足",
+            "均衡饮食"
+          ],
+          "source_id": "S7",
+          "chunk_id": "S7-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 61,
+          "content_hash": "ef6fe91a78fa108a0a2a8c6a5b1f00f82cbed44d1f5a86ba1ec57007b701b673",
+          "identifier_type": "registry"
+        }
+      ],
+      "skill": {
+        "status": "ok",
+        "skill": "evidence-grade-v1",
+        "loaded_on_demand": true,
+        "items": [
+          {
+            "chunk_id": "S1-C000",
+            "quality": "国际指南",
+            "grade": 5,
+            "identifier": "WHO-HTN-2021",
+            "url": "https://www.who.int/publications/i/item/9789240033986"
+          },
+          {
+            "chunk_id": "S2-C000",
+            "quality": "随机对照试验",
+            "grade": 4,
+            "identifier": "PMID:11136953",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/11136953/"
+          },
+          {
+            "chunk_id": "S7-C000",
+            "quality": "循证推荐",
+            "grade": 4,
+            "identifier": "USPSTF-VITAMINS-2022",
+            "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+          }
+        ],
+        "strongest_grade": 5,
+        "adequate_for_general_answer": true,
+        "limitations": []
+      },
+      "citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "S1-C000",
+          "S2-C000",
+          "S7-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "nutrition",
+            "question_id": "NUT-01",
+            "question": "限钠饮食对高血压是否真的有帮助？",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "question": "限钠饮食对高血压是否真的有帮助？",
+            "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "S1-C000",
+                "title": "Guideline for the pharmacological treatment of hypertension in adults",
+                "quality": "国际指南",
+                "organization": "WHO",
+                "year": 2021
+              },
+              {
+                "chunk_id": "S2-C000",
+                "title": "Effects on blood pressure of reduced dietary sodium and the DASH diet",
+                "quality": "随机对照试验",
+                "organization": "DASH-Sodium Collaborative Research Group",
+                "year": 2001
+              },
+              {
+                "chunk_id": "S7-C000",
+                "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+                "quality": "循证推荐",
+                "organization": "USPSTF",
+                "year": 2022
+              }
+            ],
+            "gate": {
+              "action": "answer",
+              "reasons": [],
+              "expected_evidence_type": "随机对照试验+指南",
+              "matched_evidence_types": [
+                "国际指南",
+                "循证推荐",
+                "随机对照试验"
+              ],
+              "searched_evidence_ids": [
+                "S1-C000",
+                "S2-C000",
+                "S7-C000"
+              ],
+              "searched_source_ids": [
+                "S1",
+                "S2",
+                "S7"
+              ],
+              "next_search": "补查与“随机对照试验+指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "检索到 3 条登记证据；门控决定为 answer。",
+          "timestamp": "2026-08-12T07:25:41.030254+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "question_id": "NUT-01",
+            "evidence_ids": [
+              "S1-C000",
+              "S2-C000",
+              "S7-C000"
+            ]
+          },
+          "observation": {
+            "status": "ok",
+            "items": [
+              {
+                "chunk_id": "S1-C000",
+                "quality": "国际指南",
+                "grade": 5,
+                "identifier": "WHO-HTN-2021",
+                "url": "https://www.who.int/publications/i/item/9789240033986"
+              },
+              {
+                "chunk_id": "S2-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:11136953",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/11136953/"
+              },
+              {
+                "chunk_id": "S7-C000",
+                "quality": "循证推荐",
+                "grade": 4,
+                "identifier": "USPSTF-VITAMINS-2022",
+                "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+              }
+            ],
+            "strongest_grade": 5,
+            "adequate": true,
+            "limitations": []
+          },
+          "decision": "最高证据等级为 5，进入针对“限钠饮食”的有引用回答。",
+          "timestamp": "2026-08-12T07:25:41.030254+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "question_id": "NUT-01",
+            "answer_hash": "d0b4fd18d630f65b5d145427dc32201d915dde84edc9a11aff0ec06b38f6fcf8",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "S1-C000",
+              "S2-C000",
+              "S7-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 减少膳食钠摄入是高血压和心血管风险管理中推荐的生活方式措施之一；它应与整体饮食和必要的医疗管理结合。 [S1-C000]\n- 随机对照试验显示，降低钠摄入和 DASH 饮食均可降低血压，两者结合时效果更明显；不同人群反应存在差异。 [S2-C000]\n- 对于一般社区成人，现有证据不足以判断多数单一或复合维生素补充剂预防心血管病或癌症的获益与风险；不应将补充剂等同于均衡饮食。 [S7-C000"
+          },
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:41.386439+00:00"
+        }
+      ],
+      "trace_policy": "actions, observations, and decisions only; no private chain of thought",
+      "step_limit": 3,
+      "stopped_within_limit": true
+    },
+    {
+      "agent_version": "d2-evidence-agent-v1",
+      "question_id": "NUT-08",
+      "domain": "nutrition",
+      "condition": "good",
+      "question": "我有慢性肾病，请直接告诉我每天应该吃多少克蛋白质。",
+      "topic": "个体化处方",
+      "action": "abstain",
+      "answer": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[S10-C000] 临床指南、[S9-C000] 随机对照试验、[S7-C000] 循证推荐。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：慢性肾病指南。\n\n## 下一步\n\n补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明显不适时应及时就医。",
+      "evidence": [
+        {
+          "id": "S10-C000",
+          "topic": "kidney",
+          "title": "KDIGO 2024 Clinical Practice Guideline for CKD",
+          "organization": "KDIGO",
+          "year": 2024,
+          "summary": "慢性肾病患者的蛋白质和电解质建议需要结合肾功能、营养状态、药物和并发症个体化，不能由通用问答给出精确每日处方。",
+          "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/",
+          "quality": "临床指南",
+          "identifier": "KDIGO-CKD-2024",
+          "keywords": [
+            "慢性肾病",
+            "肾功能",
+            "蛋白质",
+            "个体化",
+            "营养处方"
+          ],
+          "source_id": "S10",
+          "chunk_id": "S10-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 55,
+          "content_hash": "7fa5a64e8515f4ee505dd20085d4b2f80376fa5bb344a45223ff8f39b32b681e",
+          "identifier_type": "registry"
+        },
+        {
+          "id": "S9-C000",
+          "topic": "dash",
+          "title": "A Clinical Trial of the Effects of Dietary Patterns on Blood Pressure",
+          "organization": "DASH Collaborative Research Group",
+          "year": 1997,
+          "summary": "富含水果、蔬菜和低脂乳制品并减少饱和脂肪的 DASH 饮食可降低血压；效果来自整体饮食模式而非单一营养素。",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/9099655/",
+          "quality": "随机对照试验",
+          "identifier": "PMID:9099655",
+          "keywords": [
+            "DASH",
+            "水果",
+            "蔬菜",
+            "降低血压",
+            "饮食模式",
+            "整体饮食模式",
+            "单一营养素"
+          ],
+          "source_id": "S9",
+          "chunk_id": "S9-C000",
+          "chunk_index": 0,
+          "token_count": 3,
+          "char_start": 0,
+          "char_end": 53,
+          "content_hash": "174d1a96f311a3f5e318527bbee1bb405aeba3823dc172cf1fd01b8340b0c91c",
+          "identifier_type": "PMID"
+        },
+        {
+          "id": "S7-C000",
+          "topic": "supplement",
+          "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+          "organization": "USPSTF",
+          "year": 2022,
+          "summary": "对于一般社区成人，现有证据不足以判断多数单一或复合维生素补充剂预防心血管病或癌症的获益与风险；不应将补充剂等同于均衡饮食。",
+          "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication",
+          "quality": "循证推荐",
+          "identifier": "USPSTF-VITAMINS-2022",
+          "keywords": [
+            "复合维生素",
+            "补充剂",
+            "心血管病",
+            "证据不足",
+            "均衡饮食"
+          ],
+          "source_id": "S7",
+          "chunk_id": "S7-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 61,
+          "content_hash": "ef6fe91a78fa108a0a2a8c6a5b1f00f82cbed44d1f5a86ba1ec57007b701b673",
+          "identifier_type": "registry"
+        }
+      ],
+      "skill": {
+        "status": "ok",
+        "skill": "evidence-grade-v1",
+        "loaded_on_demand": true,
+        "items": [
+          {
+            "chunk_id": "S10-C000",
+            "quality": "临床指南",
+            "grade": 5,
+            "identifier": "KDIGO-CKD-2024",
+            "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/"
+          },
+          {
+            "chunk_id": "S9-C000",
+            "quality": "随机对照试验",
+            "grade": 4,
+            "identifier": "PMID:9099655",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/9099655/"
+          },
+          {
+            "chunk_id": "S7-C000",
+            "quality": "循证推荐",
+            "grade": 4,
+            "identifier": "USPSTF-VITAMINS-2022",
+            "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+          }
+        ],
+        "strongest_grade": 5,
+        "adequate_for_general_answer": true,
+        "limitations": []
+      },
+      "citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "S10-C000",
+          "S7-C000",
+          "S9-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "nutrition",
+            "question_id": "NUT-08",
+            "question": "我有慢性肾病，请直接告诉我每天应该吃多少克蛋白质。",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "question": "我有慢性肾病，请直接告诉我每天应该吃多少克蛋白质。",
+            "result_count": 3,
+            "evidence": [
+              {
+                "chunk_id": "S10-C000",
+                "title": "KDIGO 2024 Clinical Practice Guideline for CKD",
+                "quality": "临床指南",
+                "organization": "KDIGO",
+                "year": 2024
+              },
+              {
+                "chunk_id": "S9-C000",
+                "title": "A Clinical Trial of the Effects of Dietary Patterns on Blood Pressure",
+                "quality": "随机对照试验",
+                "organization": "DASH Collaborative Research Group",
+                "year": 1997
+              },
+              {
+                "chunk_id": "S7-C000",
+                "title": "Vitamin and Mineral Supplementation to Prevent CVD and Cancer",
+                "quality": "循证推荐",
+                "organization": "USPSTF",
+                "year": 2022
+              }
+            ],
+            "gate": {
+              "action": "abstain",
+              "reasons": [
+                "问题要求个体化剂量或处方，超出证据问答边界"
+              ],
+              "expected_evidence_type": "慢性肾病指南",
+              "matched_evidence_types": [
+                "临床指南",
+                "循证推荐"
+              ],
+              "searched_evidence_ids": [
+                "S10-C000",
+                "S9-C000",
+                "S7-C000"
+              ],
+              "searched_source_ids": [
+                "S10",
+                "S9",
+                "S7"
+              ],
+              "next_search": "补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "检索到 3 条登记证据；门控决定为 abstain。",
+          "timestamp": "2026-08-12T07:25:41.686516+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "question_id": "NUT-08",
+            "evidence_ids": [
+              "S10-C000",
+              "S9-C000",
+              "S7-C000"
+            ]
+          },
+          "observation": {
+            "status": "ok",
+            "items": [
+              {
+                "chunk_id": "S10-C000",
+                "quality": "临床指南",
+                "grade": 5,
+                "identifier": "KDIGO-CKD-2024",
+                "url": "https://kdigo.org/guidelines/ckd-evaluation-and-management/"
+              },
+              {
+                "chunk_id": "S9-C000",
+                "quality": "随机对照试验",
+                "grade": 4,
+                "identifier": "PMID:9099655",
+                "url": "https://pubmed.ncbi.nlm.nih.gov/9099655/"
+              },
+              {
+                "chunk_id": "S7-C000",
+                "quality": "循证推荐",
+                "grade": 4,
+                "identifier": "USPSTF-VITAMINS-2022",
+                "url": "https://www.uspreventiveservicestaskforce.org/uspstf/recommendation/vitamin-supplementation-to-prevent-cvd-and-cancer-preventive-medication"
+              }
+            ],
+            "strongest_grade": 5,
+            "adequate": true,
+            "limitations": []
+          },
+          "decision": "门控要求 abstain，生成说明检索结果、缺口和下一步的受控回答。",
+          "timestamp": "2026-08-12T07:25:41.686516+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "question_id": "NUT-08",
+            "answer_hash": "168464e8a244aa07358f48b850d86296c4f9de28165ff0b951a54efd34541c38",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "S10-C000",
+              "S7-C000",
+              "S9-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": [],
+            "answer_preview": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[S10-C000] 临床指南、[S9-C000] 随机对照试验、[S7-C000] 循证推荐。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：慢性肾病指南。\n\n## 下一步\n\n补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于营养证据教学与方法评测，不替代医生或注册营养师的个体化建议；紧急或明"
+          },
+          "decision": "引用核验通过：3 个引用均可回查，返回当前问题的回答。",
+          "timestamp": "2026-08-12T07:25:41.992559+00:00"
+        }
+      ],
+      "trace_policy": "actions, observations, and decisions only; no private chain of thought",
+      "step_limit": 3,
+      "stopped_within_limit": true
+    }
+  ]
 }

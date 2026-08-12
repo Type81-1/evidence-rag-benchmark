@@ -125,9 +125,15 @@ async function saveReview(event){
 }
 
 function agentPayload(){return {domain:currentDomain,question_id:$('#question-select').value,retrieval_condition:$('#condition-select').value};}
+function traceBody(row){
+  const observation=row.observation||{};
+  if(row.tool==='search_evidence')return `<div class="trace-details"><div><b>门控动作</b><span>${escapeHtml(observation.gate?.action||'unknown')}</span></div><div><b>目标证据</b><span>${escapeHtml(observation.gate?.expected_evidence_type||'相关登记证据')}</span></div></div><div class="trace-evidence">${(observation.evidence||[]).map(item=>`<section><b>[${escapeHtml(item.chunk_id)}] ${escapeHtml(item.title)}</b><span>${escapeHtml(item.organization)} · ${item.year} · ${escapeHtml(item.quality)}</span></section>`).join('')||'<span>没有检索到登记证据</span>'}</div>`;
+  if(row.tool==='assess_evidence_grade')return `<div class="trace-details"><div><b>最高等级</b><span>Grade ${observation.strongest_grade||0}</span></div><div><b>可回答性</b><span>${observation.adequate?'证据可支持一般回答':'需受控拒答或说明局限'}</span></div></div><div class="trace-grades">${(observation.items||[]).map(item=>`<span>[${escapeHtml(item.chunk_id)}] ${escapeHtml(item.quality)} · Grade ${item.grade}</span>`).join('')}</div>`;
+  return `<div class="trace-details"><div><b>核验状态</b><span>${escapeHtml(observation.status)}</span></div><div><b>引用精度</b><span>${percent(observation.citation_precision)}</span></div><div><b>已核验引用</b><span>${(observation.cited_chunk_ids||[]).map(id=>`[${escapeHtml(id)}]`).join('、')||'无引用'}</span></div></div><p class="trace-preview">${escapeHtml(observation.answer_preview||'')}</p>`;
+}
 function renderTrace(result){
   $('#agent-result').hidden=false;
-  $('#agent-result').innerHTML=`<div class="agent-summary"><b>动作：${escapeHtml(result.action)}</b><span>${result.trace.length}/${result.step_limit} 步</span><span>${escapeHtml(result.skill.skill)}</span><span>引用核验：${escapeHtml(result.citation_check.status)}</span></div><div class="trace-grid">${result.trace.map(row=>`<article class="trace-step"><header><b>STEP ${row.step}</b><code>${escapeHtml(row.tool)}</code></header><p><b>Observation</b> ${escapeHtml(JSON.stringify(row.observation))}</p><p><b>Decision</b> ${escapeHtml(row.decision)}</p></article>`).join('')}</div>`;
+  $('#agent-result').innerHTML=`<div class="agent-summary"><b>动作：${escapeHtml(result.action)}</b><span>${escapeHtml(result.question_id)} · ${escapeHtml(result.condition)}</span><span>${result.trace.length}/${result.step_limit} 步</span><span>${escapeHtml(result.skill.skill)}</span><span>引用核验：${escapeHtml(result.citation_check.status)}</span></div><div class="chain-question"><b>当前问题</b><span>${escapeHtml(result.question)}</span></div><div class="trace-grid">${result.trace.map(row=>`<article class="trace-step"><header><b>STEP ${row.step}</b><code>${escapeHtml(row.tool)}</code></header>${traceBody(row)}<p class="trace-decision"><b>本步决策</b><span>${escapeHtml(row.decision)}</span></p></article>`).join('')}</div><article class="agent-final"><header><b>当前问题的最终回答</b><span>${escapeHtml(result.action)}</span></header><div class="chain-answer">${renderMarkdown(result.answer)}</div></article>`;
 }
 function checkLabel(value){return value?'<span class="check-pass">通过</span>':'<span class="check-fail">未通过</span>';}
 function renderMultiAgent(data){

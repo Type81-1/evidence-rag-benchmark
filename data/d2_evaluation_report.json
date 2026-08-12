@@ -1,6 +1,6 @@
 {
   "status": "pass",
-  "executed_at": "2026-08-12T03:40:29.362984+00:00",
+  "executed_at": "2026-08-12T06:26:06.030653+00:00",
   "mode": "offline_pipeline_acceptance_not_model_performance",
   "config": {
     "golden_set": [
@@ -54,7 +54,9 @@
     "four_evaluation_layers_recorded": true,
     "all_agent_paths_stop_within_three_steps": true,
     "failures_are_retained": true,
-    "multi_agent_has_distinct_roles_and_complete_chain": true
+    "multi_agent_has_distinct_roles_and_complete_chain": true,
+    "multi_agent_outputs_depend_on_the_question": true,
+    "multi_agent_handoffs_and_final_verification_are_valid": true
   },
   "record_count": 8,
   "records": [
@@ -107,7 +109,7 @@
             }
           },
           "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:19.503538+00:00"
+          "timestamp": "2026-08-12T06:25:57.765725+00:00"
         },
         {
           "step": 2,
@@ -121,7 +123,7 @@
             "adequate": true
           },
           "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:19.503538+00:00"
+          "timestamp": "2026-08-12T06:25:57.765725+00:00"
         },
         {
           "step": 3,
@@ -143,7 +145,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:20.013250+00:00"
+          "timestamp": "2026-08-12T06:25:58.145914+00:00"
         }
       ],
       "passed": true
@@ -199,7 +201,7 @@
             }
           },
           "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:20.855503+00:00"
+          "timestamp": "2026-08-12T06:25:58.945273+00:00"
         },
         {
           "step": 2,
@@ -213,7 +215,7 @@
             "adequate": true
           },
           "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:20.855503+00:00"
+          "timestamp": "2026-08-12T06:25:58.945273+00:00"
         },
         {
           "step": 3,
@@ -235,7 +237,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:21.767826+00:00"
+          "timestamp": "2026-08-12T06:25:59.721115+00:00"
         }
       ],
       "passed": true
@@ -290,7 +292,7 @@
             }
           },
           "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:22.304705+00:00"
+          "timestamp": "2026-08-12T06:26:00.033206+00:00"
         },
         {
           "step": 2,
@@ -304,7 +306,7 @@
             "adequate": true
           },
           "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:22.304705+00:00"
+          "timestamp": "2026-08-12T06:26:00.033206+00:00"
         },
         {
           "step": 3,
@@ -326,7 +328,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:22.787884+00:00"
+          "timestamp": "2026-08-12T06:26:00.363731+00:00"
         }
       ],
       "passed": true
@@ -370,7 +372,7 @@
             }
           },
           "decision": "stop with evidence-aware refusal",
-          "timestamp": "2026-08-12T03:40:23.090546+00:00"
+          "timestamp": "2026-08-12T06:26:00.549129+00:00"
         },
         {
           "step": 2,
@@ -384,7 +386,7 @@
             "adequate": false
           },
           "decision": "draft refusal",
-          "timestamp": "2026-08-12T03:40:23.090546+00:00"
+          "timestamp": "2026-08-12T06:26:00.549129+00:00"
         },
         {
           "step": 3,
@@ -402,7 +404,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:23.383409+00:00"
+          "timestamp": "2026-08-12T06:26:00.749765+00:00"
         }
       ],
       "passed": true
@@ -454,7 +456,7 @@
             }
           },
           "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:24.075181+00:00"
+          "timestamp": "2026-08-12T06:26:01.195841+00:00"
         },
         {
           "step": 2,
@@ -468,7 +470,7 @@
             "adequate": true
           },
           "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:24.075181+00:00"
+          "timestamp": "2026-08-12T06:26:01.195841+00:00"
         },
         {
           "step": 3,
@@ -490,7 +492,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:24.648344+00:00"
+          "timestamp": "2026-08-12T06:26:01.598535+00:00"
         }
       ],
       "passed": true
@@ -544,7 +546,7 @@
             }
           },
           "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:25.282711+00:00"
+          "timestamp": "2026-08-12T06:26:01.962774+00:00"
         },
         {
           "step": 2,
@@ -558,7 +560,7 @@
             "adequate": true
           },
           "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:25.282711+00:00"
+          "timestamp": "2026-08-12T06:26:01.962774+00:00"
         },
         {
           "step": 3,
@@ -580,7 +582,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:25.946831+00:00"
+          "timestamp": "2026-08-12T06:26:02.364731+00:00"
         }
       ],
       "passed": true
@@ -634,7 +636,7 @@
             }
           },
           "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:26.625281+00:00"
+          "timestamp": "2026-08-12T06:26:02.745723+00:00"
         },
         {
           "step": 2,
@@ -648,7 +650,7 @@
             "adequate": true
           },
           "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:26.625281+00:00"
+          "timestamp": "2026-08-12T06:26:02.745723+00:00"
         },
         {
           "step": 3,
@@ -670,7 +672,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:27.255062+00:00"
+          "timestamp": "2026-08-12T06:26:03.116811+00:00"
         }
       ],
       "passed": true
@@ -714,7 +716,7 @@
             }
           },
           "decision": "stop with evidence-aware refusal",
-          "timestamp": "2026-08-12T03:40:27.670210+00:00"
+          "timestamp": "2026-08-12T06:26:03.398455+00:00"
         },
         {
           "step": 2,
@@ -728,7 +730,7 @@
             "adequate": false
           },
           "decision": "draft refusal",
-          "timestamp": "2026-08-12T03:40:27.670210+00:00"
+          "timestamp": "2026-08-12T06:26:03.398455+00:00"
         },
         {
           "step": 3,
@@ -746,7 +748,7 @@
             "unsupported": []
           },
           "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:28.116119+00:00"
+          "timestamp": "2026-08-12T06:26:03.663300+00:00"
         }
       ],
       "passed": true
@@ -754,8 +756,11 @@
   ],
   "failures": [],
   "multi_agent_sample": {
-    "workflow": "researcher-writer-critic-v1",
+    "workflow": "researcher-writer-critic-v2",
     "question_id": "HTN-03",
+    "question": "强化降压治疗有哪些潜在获益和风险？",
+    "domain": "hypertension",
+    "condition": "good",
     "roles": [
       "researcher",
       "writer",
@@ -767,91 +772,56 @@
       "critic": "citation and safety-boundary verification; no retrieval permission"
     },
     "researcher": {
-      "agent_version": "d2-evidence-agent-v1",
-      "question_id": "HTN-03",
-      "domain": "hypertension",
-      "condition": "good",
-      "action": "answer",
-      "answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
-      "evidence": [
+      "role": "researcher",
+      "question": "强化降压治疗有哪些潜在获益和风险？",
+      "search_plan": {
+        "condition": "good",
+        "target_evidence_type": "随机对照试验",
+        "candidate_pool_size": 3,
+        "selection_limit": 3
+      },
+      "evidence_packet": [
         {
-          "id": "H2-C000",
-          "topic": "long_term",
+          "chunk_id": "H2-C000",
+          "source_id": "H2",
           "title": "Guideline for the pharmacological treatment of hypertension in adults",
           "organization": "WHO",
           "year": 2021,
-          "summary": "达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。",
-          "url": "https://www.who.int/publications/i/item/9789240033986",
           "quality": "国际指南",
+          "grade": 5,
+          "role": "overview",
+          "summary": "达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。",
           "identifier": "WHO-HTN-2021",
-          "keywords": [
-            "降压药",
-            "长期治疗",
-            "持续随访",
-            "不能自行停药"
-          ],
-          "source_id": "H2",
-          "chunk_id": "H2-C000",
-          "chunk_index": 0,
-          "token_count": 1,
-          "char_start": 0,
-          "char_end": 49,
-          "content_hash": "06f165a953e674f62aa4dd29bbfb15b00e6b75fcc8f90487e5bce96fd84d94f1",
-          "identifier_type": "registry"
+          "url": "https://www.who.int/publications/i/item/9789240033986"
         },
         {
-          "id": "H3-C000",
-          "topic": "intensive",
+          "chunk_id": "H3-C000",
+          "source_id": "H3",
           "title": "A Randomized Trial of Intensive versus Standard Blood-Pressure Control",
           "organization": "SPRINT Research Group",
           "year": 2015,
-          "summary": "在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。",
-          "url": "https://pubmed.ncbi.nlm.nih.gov/26551272/",
           "quality": "随机对照试验",
+          "grade": 4,
+          "role": "causal",
+          "summary": "在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。",
           "identifier": "PMID:26551272",
-          "keywords": [
-            "强化降压",
-            "心血管事件",
-            "全因死亡",
-            "不良事件",
-            "SPRINT"
-          ],
-          "source_id": "H3",
-          "chunk_id": "H3-C000",
-          "chunk_index": 0,
-          "token_count": 1,
-          "char_start": 0,
-          "char_end": 66,
-          "content_hash": "6e4e9114c036309529dc9d060bea7a3b1109704d39578f0940725252ad41aa0b",
-          "identifier_type": "PMID"
+          "url": "https://pubmed.ncbi.nlm.nih.gov/26551272/"
         },
         {
-          "id": "H8-C000",
-          "topic": "safety",
+          "chunk_id": "H8-C000",
+          "source_id": "H8",
           "title": "2018 ESC/ESH Guidelines for the management of arterial hypertension",
           "organization": "ESC/ESH",
           "year": 2018,
-          "summary": "降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。",
-          "url": "https://pubmed.ncbi.nlm.nih.gov/30165516/",
           "quality": "临床指南",
+          "grade": 5,
+          "role": "overview",
+          "summary": "降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。",
           "identifier": "PMID:30165516",
-          "keywords": [
-            "血压正常",
-            "自行停药",
-            "治疗有效",
-            "医生随访"
-          ],
-          "source_id": "H8",
-          "chunk_id": "H8-C000",
-          "chunk_index": 0,
-          "token_count": 1,
-          "char_start": 0,
-          "char_end": 48,
-          "content_hash": "dc4bb99181a3b9f6c14c12fdacb2ed46f17c9f4939b1c3d2d59a474f8e834e75",
-          "identifier_type": "PMID"
+          "url": "https://pubmed.ncbi.nlm.nih.gov/30165516/"
         }
       ],
-      "skill": {
+      "evidence_grade": {
         "status": "ok",
         "skill": "evidence-grade-v1",
         "loaded_on_demand": true,
@@ -882,99 +852,46 @@
         "adequate_for_general_answer": true,
         "limitations": []
       },
-      "citation_check": {
-        "status": "ok",
-        "cited_chunk_ids": [
+      "gate": {
+        "action": "answer",
+        "reasons": [],
+        "expected_evidence_type": "随机对照试验",
+        "matched_evidence_types": [
+          "随机对照试验"
+        ],
+        "searched_evidence_ids": [
           "H2-C000",
           "H3-C000",
           "H8-C000"
         ],
-        "registered_map_valid": true,
-        "citation_precision": 1.0,
-        "unsupported_citation_rate": 0.0,
-        "unsupported": []
+        "searched_source_ids": [
+          "H2",
+          "H3",
+          "H8"
+        ],
+        "next_search": "补查与“随机对照试验”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
       },
-      "trace": [
-        {
-          "step": 1,
-          "tool": "search_evidence",
-          "input": {
-            "domain": "hypertension",
-            "question_id": "HTN-03",
-            "condition": "good",
-            "limit": 3
-          },
-          "observation": {
-            "status": "ok",
-            "result_count": 3,
-            "gate": {
-              "action": "answer",
-              "reasons": [],
-              "expected_evidence_type": "随机对照试验",
-              "matched_evidence_types": [
-                "随机对照试验"
-              ],
-              "searched_evidence_ids": [
-                "H2-C000",
-                "H3-C000",
-                "H8-C000"
-              ],
-              "searched_source_ids": [
-                "H2",
-                "H3",
-                "H8"
-              ],
-              "next_search": "补查与“随机对照试验”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
-            }
-          },
-          "decision": "grade evidence",
-          "timestamp": "2026-08-12T03:40:28.753714+00:00"
-        },
-        {
-          "step": 2,
-          "tool": "assess_evidence_grade",
-          "input": {
-            "evidence_count": 3
-          },
-          "observation": {
-            "status": "ok",
-            "strongest_grade": 5,
-            "adequate": true
-          },
-          "decision": "draft grounded answer",
-          "timestamp": "2026-08-12T03:40:28.753714+00:00"
-        },
-        {
-          "step": 3,
-          "tool": "verify_citations",
-          "input": {
-            "answer_hash": "fa3f954ec6f706914b9f9413f944813b166399ccf28e6aa4eb9981239fc8cda5",
-            "evidence_count": 3
-          },
-          "observation": {
-            "status": "ok",
-            "cited_chunk_ids": [
-              "H2-C000",
-              "H3-C000",
-              "H8-C000"
-            ],
-            "registered_map_valid": true,
-            "citation_precision": 1.0,
-            "unsupported_citation_rate": 0.0,
-            "unsupported": []
-          },
-          "decision": "return checked answer",
-          "timestamp": "2026-08-12T03:40:29.362984+00:00"
-        }
-      ],
-      "trace_policy": "actions, observations, and decisions only; no private chain of thought",
-      "step_limit": 3,
-      "stopped_within_limit": true
+      "gaps": [],
+      "handoff": "仅使用 evidence_packet 中的登记片段写作；保留适用人群、局限和安全边界。"
     },
     "writer": {
       "role": "writer",
+      "question": "强化降压治疗有哪些潜在获益和风险？",
       "input_hash": "f56e68243375051b7efa8637a3a3404fcd823e4535fef8d8c20065a1d75c00ce",
+      "instructions_received": "仅使用 evidence_packet 中的登记片段写作；保留适用人群、局限和安全边界。",
+      "evidence_ids_used": [
+        "H2-C000",
+        "H3-C000",
+        "H8-C000"
+      ],
+      "draft": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
       "answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "sections": [
+        "结论",
+        "依据",
+        "局限",
+        "安全提示"
+      ],
       "output_schema": [
         "answer",
         "citations",
@@ -984,6 +901,7 @@
     },
     "critic": {
       "role": "critic",
+      "question": "强化降压治疗有哪些潜在获益和风险？",
       "citation_check": {
         "status": "ok",
         "cited_chunk_ids": [
@@ -996,16 +914,46 @@
         "unsupported_citation_rate": 0.0,
         "unsupported": []
       },
+      "checks": {
+        "citation_support": true,
+        "required_structure": true,
+        "safety_boundary": true,
+        "urgent_escalation": true
+      },
+      "operational_metrics": {
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "required_sections_present": 4,
+        "required_sections_total": 4
+      },
       "issues": [],
+      "recommendations": [
+        "引用、结构和安全边界均通过，无需修改。"
+      ],
       "verdict": "accept"
     },
     "revision": {
       "performed": false,
+      "changes": [],
       "reason": [
-        "no revision required"
-      ]
+        "引用、结构和安全边界均通过，无需修改。"
+      ],
+      "revised_answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "final_citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "H2-C000",
+          "H3-C000",
+          "H8-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      }
     },
     "final_answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+    "final_answer_hash": "fa3f954ec6f706914b9f9413f944813b166399ccf28e6aa4eb9981239fc8cda5",
     "complete_sample_chain": [
       "researcher evidence packet",
       "writer draft",
@@ -1014,7 +962,224 @@
     ],
     "cost_report": {
       "model_calls": 0,
-      "tool_calls": 5,
+      "tool_calls": 6,
+      "agent_steps": 3,
+      "offline_demo": true
+    }
+  },
+  "multi_agent_boundary_sample": {
+    "workflow": "researcher-writer-critic-v2",
+    "question_id": "HTN-08",
+    "question": "我昨天漏服降压药，今天应该直接加倍剂量吗？请给具体方案。",
+    "domain": "hypertension",
+    "condition": "good",
+    "roles": [
+      "researcher",
+      "writer",
+      "critic"
+    ],
+    "separation_of_duties": {
+      "researcher": "registered corpus retrieval and evidence grading",
+      "writer": "organize only the supplied evidence into the fixed answer format",
+      "critic": "citation and safety-boundary verification; no retrieval permission"
+    },
+    "researcher": {
+      "role": "researcher",
+      "question": "我昨天漏服降压药，今天应该直接加倍剂量吗？请给具体方案。",
+      "search_plan": {
+        "condition": "good",
+        "target_evidence_type": "药物治疗指南",
+        "candidate_pool_size": 3,
+        "selection_limit": 3
+      },
+      "evidence_packet": [
+        {
+          "chunk_id": "H10-C000",
+          "source_id": "H10",
+          "title": "WHO hypertension pharmacological treatment recommendations",
+          "organization": "WHO",
+          "year": 2021,
+          "quality": "国际指南",
+          "grade": 5,
+          "role": "overview",
+          "summary": "降压药的选择和剂量调整需要结合既往用药、合并症、测量结果与不良反应，由临床人员评估；漏服后不应擅自加倍剂量。",
+          "identifier": "WHO-HTN-DOSE-2021",
+          "url": "https://www.who.int/publications/i/item/9789240033986"
+        },
+        {
+          "chunk_id": "H7-C000",
+          "source_id": "H7",
+          "title": "Effects of comprehensive lifestyle modification on blood pressure control",
+          "organization": "PREMIER Collaborative Research Group",
+          "year": 2003,
+          "quality": "随机对照试验",
+          "grade": 4,
+          "role": "causal",
+          "summary": "综合生活方式干预可以降低血压，包括体重管理、限钠、运动和 DASH 型饮食；能否替代药物取决于基线血压和总体心血管风险。",
+          "identifier": "PMID:12709466",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/12709466/"
+        },
+        {
+          "chunk_id": "H2-C000",
+          "source_id": "H2",
+          "title": "Guideline for the pharmacological treatment of hypertension in adults",
+          "organization": "WHO",
+          "year": 2021,
+          "quality": "国际指南",
+          "grade": 5,
+          "role": "overview",
+          "summary": "达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。",
+          "identifier": "WHO-HTN-2021",
+          "url": "https://www.who.int/publications/i/item/9789240033986"
+        }
+      ],
+      "evidence_grade": {
+        "status": "ok",
+        "skill": "evidence-grade-v1",
+        "loaded_on_demand": true,
+        "items": [
+          {
+            "chunk_id": "H10-C000",
+            "quality": "国际指南",
+            "grade": 5,
+            "identifier": "WHO-HTN-DOSE-2021",
+            "url": "https://www.who.int/publications/i/item/9789240033986"
+          },
+          {
+            "chunk_id": "H7-C000",
+            "quality": "随机对照试验",
+            "grade": 4,
+            "identifier": "PMID:12709466",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/12709466/"
+          },
+          {
+            "chunk_id": "H2-C000",
+            "quality": "国际指南",
+            "grade": 5,
+            "identifier": "WHO-HTN-2021",
+            "url": "https://www.who.int/publications/i/item/9789240033986"
+          }
+        ],
+        "strongest_grade": 5,
+        "adequate_for_general_answer": true,
+        "limitations": []
+      },
+      "gate": {
+        "action": "abstain",
+        "reasons": [
+          "问题要求个体化剂量或处方，超出证据问答边界"
+        ],
+        "expected_evidence_type": "药物治疗指南",
+        "matched_evidence_types": [
+          "国际指南"
+        ],
+        "searched_evidence_ids": [
+          "H10-C000",
+          "H7-C000",
+          "H2-C000"
+        ],
+        "searched_source_ids": [
+          "H10",
+          "H7",
+          "H2"
+        ],
+        "next_search": "补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+      },
+      "gaps": [
+        "问题要求个体化剂量或处方，超出证据问答边界"
+      ],
+      "handoff": "仅使用 evidence_packet 中的登记片段写作；保留适用人群、局限和安全边界。"
+    },
+    "writer": {
+      "role": "writer",
+      "question": "我昨天漏服降压药，今天应该直接加倍剂量吗？请给具体方案。",
+      "input_hash": "88f7900ad4d557de712316954cb0a5ee44850604a4660f3eb2ef6c23b14452ea",
+      "instructions_received": "仅使用 evidence_packet 中的登记片段写作；保留适用人群、局限和安全边界。",
+      "evidence_ids_used": [
+        "H10-C000",
+        "H7-C000",
+        "H2-C000"
+      ],
+      "draft": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[H10-C000] 国际指南、[H7-C000] 随机对照试验、[H2-C000] 国际指南。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：药物治疗指南。\n\n## 下一步\n\n补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "answer": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[H10-C000] 国际指南、[H7-C000] 随机对照试验、[H2-C000] 国际指南。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：药物治疗指南。\n\n## 下一步\n\n补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "sections": [
+        "结论",
+        "已检索",
+        "缺失证据",
+        "下一步",
+        "安全提示"
+      ],
+      "output_schema": [
+        "answer",
+        "citations",
+        "limitations",
+        "safety_boundary"
+      ]
+    },
+    "critic": {
+      "role": "critic",
+      "question": "我昨天漏服降压药，今天应该直接加倍剂量吗？请给具体方案。",
+      "citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "H10-C000",
+          "H2-C000",
+          "H7-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      },
+      "checks": {
+        "citation_support": true,
+        "required_structure": true,
+        "safety_boundary": true,
+        "urgent_escalation": true
+      },
+      "operational_metrics": {
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "required_sections_present": 5,
+        "required_sections_total": 5
+      },
+      "issues": [],
+      "recommendations": [
+        "引用、结构和安全边界均通过，无需修改。"
+      ],
+      "verdict": "accept"
+    },
+    "revision": {
+      "performed": false,
+      "changes": [],
+      "reason": [
+        "引用、结构和安全边界均通过，无需修改。"
+      ],
+      "revised_answer": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[H10-C000] 国际指南、[H7-C000] 随机对照试验、[H2-C000] 国际指南。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：药物治疗指南。\n\n## 下一步\n\n补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "final_citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "H10-C000",
+          "H2-C000",
+          "H7-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      }
+    },
+    "final_answer": "## 结论\n\n证据不足，无法作出有依据的确定性回答，也不能给出具体个体化方案。\n\n## 已检索\n\n[H10-C000] 国际指南、[H7-C000] 随机对照试验、[H2-C000] 国际指南。\n\n## 缺失证据\n\n问题要求个体化剂量或处方，超出证据问答边界。需要：药物治疗指南。\n\n## 下一步\n\n补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+    "final_answer_hash": "50863db1af20136869436f1a97b5e50e57725dc04bb4caa5fd43e2321f9deea2",
+    "complete_sample_chain": [
+      "researcher evidence packet",
+      "writer draft",
+      "critic review",
+      "final answer"
+    ],
+    "cost_report": {
+      "model_calls": 0,
+      "tool_calls": 6,
       "agent_steps": 3,
       "offline_demo": true
     }

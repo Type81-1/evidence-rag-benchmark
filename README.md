@@ -100,7 +100,7 @@ Windows 下后端会自动读取当前系统代理，并在代理端口可用时
 
 ## D2AM Tool、Skill、Agent 与多角色挑战
 
-项目已按 D2AM 的最高档实现三项单一职责 Tool、按需加载的 `evidence-grade-v1` Skill、最多三轮且保留结构化 trace 的动态 Agent，以及 Researcher→Writer→Critic 完整样例链。Agent 只记录 action、observation 和 decision，不输出私有思维链；所有工具限制为登记语料只读、最多五条结果、显式超时和结构化失败。
+项目已按 D2AM 的最高档实现三项单一职责 Tool、按需加载的 `evidence-grade-v1` Skill、最多三轮且保留结构化 trace 的动态 Agent，以及 Researcher→Writer→Critic 完整样例链。Researcher 会针对当前问题输出检索计划、证据包和缺口，Writer 只使用该证据包生成草稿，Critic 对当前草稿检查引用、结构与安全边界，必要时进入修订并重新核验。Agent 只记录 action、observation 和 decision，不输出私有思维链；所有工具限制为登记语料只读、最多五条结果、显式超时和结构化失败。
 
 `d2_evaluation.py` 使用固定 8 条 Golden Set 对检索质量、引用与证据、回答质量、行为与边界四层逐项验收，并原样保存失败样本。完整逐页对照见 `docs/d2am-compliance.md`。
 

@@ -11,7 +11,7 @@ import app as app_module
 import benchmark_engine
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, apply_metadata_filters, bm25_rank, build_evidence_map, build_metadata_filters, build_prompt, hybrid_rank, passage_evidence, rewrite_query, score_answer, split_passages, validate_evidence_packet, verify_evidence_map
+from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, apply_metadata_filters, bm25_rank, build_citation_audit, build_evidence_map, build_metadata_filters, build_prompt, hybrid_rank, passage_evidence, rewrite_query, score_answer, split_passages, validate_evidence_packet, verify_evidence_map
 from course_compliance import build_compliance_report
 from advanced_evaluation import evaluate_advanced_features
 from wiki_engine import build_topic_page, ingest_topic, lint_wiki, query_wiki
@@ -83,6 +83,22 @@ def test_retrieval_exposes_fusion_reranking_and_evidence_map() -> None:
     assert verify_evidence_map(evidence_map)["valid"] is True
     assert set(evidence_map) == {item.chunk_id for item in evidence}
     assert all(entry["url"].startswith("https://") for entry in evidence_map.values())
+    assert diagnostics["top5_candidates"]
+    assert 0 <= diagnostics["top5_coverage"] <= 1
+    assert set(diagnostics["top5_hit_ids"]).issubset(set(diagnostics["top5_expected_ids"]))
+
+
+def test_citation_audit_exposes_claim_mapping_and_unregistered_ids() -> None:
+    evidence = nutrition_benchmark.EVIDENCE[:1]
+    evidence_map = build_evidence_map(evidence)
+    registered_id = next(iter(evidence_map))
+    answer = f"限钠有助于降低血压 [{registered_id}]。未知结论 [X99]。"
+    rows = build_citation_audit(answer, evidence_map, ["X99"])
+    assert rows[0]["registered"] is True
+    assert rows[0]["link_valid"] is True
+    assert "限钠" in rows[0]["claim"]
+    assert rows[1]["registered"] is False
+    assert rows[1]["support_status"] == "unregistered"
 
 
 def test_metadata_filter_query_rewrite_and_multi_round_diagnostics() -> None:

@@ -17,6 +17,52 @@ async function responseJson(response){const text=await response.text();try{retur
 function errorMessage(data,fallback='运行失败'){const detail=data?.detail;if(Array.isArray(detail))return detail.map(item=>item.msg||JSON.stringify(item)).join('；');return typeof detail==='string'?detail:(detail?.message||fallback);}
 function renderMarkdown(value){return escapeHtml(value).replace(/^## (.+)$/gm,'<h4>$1</h4>').replace(/^- (.+)$/gm,'<p class="bullet">$1</p>').replace(/\[([A-Z][A-Z0-9_-]*)]/g,'<mark>[$1]</mark>').replace(/\n{2,}/g,'</p><p>').replace(/^/,'<p>').replace(/$/,'</p>');}
 function metricRows(metrics){return rubricKeys.map(key=>`<div class="mini-metric"><span>${metricLabels[key]}</span><b>${percent(metrics[key])}</b></div>`).join('');}
+function badge(text,state='ok'){return `<span class="status-badge ${state}">${escapeHtml(text)}</span>`;}
+function expectedAction(question){return question.urgent?'紧急升级':(question.should_abstain?'受控拒答':'正常回答');}
+function actualAction(answer,question){
+  const conclusion=String(answer||'').split(/\n## /,1)[0];
+  if(question.urgent&&/(立即就医|急诊|急救|呼叫急救)/.test(answer))return '紧急升级';
+  if(/(拒绝|无法作出|无法回答|证据不足|不能由通用问答给出|不能给出具体)/.test(conclusion))return '受控拒答';
+  return '正常回答';
+}
+function renderCitationRows(audit){
+  if(!audit.length)return '<p class="evaluation-note">回答未使用可核查引用。</p>';
+  return `<div class="audit-list">${audit.map(row=>{
+    const state=row.support_status==='supported'?'ok':(row.registered?'warn':'fail');
+    const label=row.support_status==='supported'?'已登记并支持':(row.registered?'需人工复核':'未登记引用');
+    const source=row.url?`<a href="${escapeHtml(row.url)}" target="_blank" rel="noreferrer">[${escapeHtml(row.citation_id)}] ${escapeHtml(row.title||row.source_id||'登记来源')}</a>`:`<b>[${escapeHtml(row.citation_id)}] 无登记来源</b>`;
+    return `<div class="audit-row"><div>${source}</div><span>${escapeHtml(row.claim)}</span>${badge(label,state)}</div>`;
+  }).join('')}</div>`;
+}
+function renderEvaluationDashboard(data){
+  const rm=data.rag.retrieval_metrics,m=data.rag.metrics,q=data.question,gate=data.rag.validation;
+  const top5=(rm.top5_candidates||[]).map(row=>`<div class="audit-row"><b>#${row.rank} · ${escapeHtml(row.source_id)}</b><span>${escapeHtml(row.chunk_id)} · score ${Number(row.score).toFixed(3)}</span>${badge(row.is_relevant?'关键证据':'非金标准',row.is_relevant?'ok':'warn')}</div>`).join('')||'<p class="evaluation-note">没有候选证据。</p>';
+  const citationAudit=data.rag.citation_audit||[];
+  const fakeCount=citationAudit.filter(row=>!row.registered).length;
+  const needsReview=citationAudit.filter(row=>row.support_status==='needs_review').length;
+  const expected=expectedAction(q),actual=actualAction(data.rag.answer,q);
+  const behaviorPass=expected===actual&&m.safety===1&&fakeCount===0;
+  const mapValid=data.rag.evidence_map_validation?.valid===true;
+  $('#evaluation-dashboard').hidden=false;
+  $('#evaluation-dashboard').innerHTML=`
+    <article class="evaluation-card"><header><h3>1 · 检索质量</h3>${badge(rm.top5_hit?'Top-5 命中':'Top-5 未命中',rm.top5_hit?'ok':'fail')}</header><div class="evaluation-body">
+      <div class="evaluation-stats"><div><b>${percent(rm.top5_coverage)}</b><span>Top-5 关键证据覆盖</span></div><div><b>${percent(rm.precision_at_k)}</b><span>最终证据包 Precision@3</span></div><div><b>${Number(rm.mrr||0).toFixed(2)}</b><span>首个关键证据 MRR</span></div></div>
+      <p class="evaluation-note">关键证据 ${escapeHtml((rm.top5_hit_ids||[]).join('、')||'无')} / 预期 ${escapeHtml((rm.top5_expected_ids||[]).join('、')||'无')}；最终证据包 Recall@3 ${percent(rm.recall_at_k)}。</p><div class="audit-list">${top5}</div>
+    </div></article>
+    <article class="evaluation-card"><header><h3>2 · 引用与证据</h3>${badge(fakeCount?'存在未登记引用':(needsReview?'存在待复核引用':'引用可追溯'),fakeCount?'fail':(needsReview?'warn':'ok'))}</header><div class="evaluation-body">
+      <div class="evaluation-stats"><div><b>${percent(m.citation_quality)}</b><span>引用质量代理分</span></div><div><b>${citationAudit.length}</b><span>引用出现次数</span></div><div><b>${mapValid?'通过':'失败'}</b><span>证据映射完整性</span></div></div>
+      ${renderCitationRows(citationAudit)}<p class="evaluation-note">“需人工复核”表示系统无法确认相邻主张获得当前证据充分支持；链接有效仅表示登记 URL 格式有效，不代表已实时联网访问。</p>
+    </div></article>
+    <article class="evaluation-card"><header><h3>3 · 回答质量</h3><span>自动规则代理分</span></header><div class="evaluation-body"><div class="quality-bars">
+      ${['correctness','completeness','safety','clarity'].map(key=>`<div><b>${percent(m[key])}</b><span>${metricLabels[key]}</span></div>`).join('')}
+      </div><p class="evaluation-note">正式结论需结合下方 1～5 分人工盲评及评审理由；这里用于快速筛查。</p></div></article>
+    <article class="evaluation-card"><header><h3>4 · 行为与边界</h3>${badge(behaviorPass?'PASS':'FAIL',behaviorPass?'ok':'fail')}</header><div class="evaluation-body"><div class="boundary-grid">
+      <div class="boundary-item"><b>预期行为</b><span>${escapeHtml(expected)} · ${escapeHtml(q.notes||q.topic)}</span></div>
+      <div class="boundary-item"><b>实际行为</b><span>${escapeHtml(actual)} · 阀门 ${escapeHtml(gate.action)}</span></div>
+      <div class="boundary-item"><b>引用风险</b><span>未登记 ${fakeCount} 条 · 待复核 ${needsReview} 条</span></div>
+      <div class="boundary-item"><b>边界检查</b><span>安全 ${percent(m.safety)} · 拒答 ${percent(m.refusal_quality)} · Trace ${data.rag.retrieval_metrics?'完整':'缺失'}</span></div>
+      </div><p class="evaluation-note">阀门原因：${escapeHtml(gate.reasons.join('；')||'证据包通过验证')}。目标证据：${escapeHtml(gate.expected_evidence_type)}。</p></div></article>`;
+}
 
 async function loadStatus(){
   const data = await fetch('/api/project-status').then(r=>r.json());
@@ -72,7 +118,7 @@ async function setView(view){
   currentView=view;document.body.classList.toggle('blind-mode',view==='blind');
   document.querySelectorAll('[data-view]').forEach(button=>button.classList.toggle('active',button.dataset.view===view));
   $('#view-mode-note').textContent=view==='blind'?'盲评模式隐藏场景标签、系统身份、检索诊断和机械分数，并随机交换 X/Y。':'实验操作模式显示场景标签、系统身份和检索诊断。';
-  await loadQuestions();if(currentComparison)renderOutputs(currentComparison);
+  await loadQuestions();if(currentComparison){renderOutputs(currentComparison);if(view==='design')renderEvaluationDashboard(currentComparison);}
 }
 
 async function runComparison(){
@@ -84,8 +130,7 @@ async function runComparison(){
     $('#mode-label').textContent=data.run_mode==='live_model'?'真实模型运行':'管线演示 · 非模型结论';
     notice.textContent=`${data.question.id} · ${data.question.topic} · ${armLabels[data.condition][0]} · Prompt ${data.prompt_version}`;
     renderOutputs(data);
-    const rm=data.rag.retrieval_metrics;$('#retrieval-diagnostic').hidden=false;$('#retrieval-diagnostic').innerHTML=`<b>检索诊断</b><span>Precision@3 ${percent(rm.precision_at_k)}</span><span>Recall@3 ${percent(rm.recall_at_k)}</span><span>MRR ${rm.mrr.toFixed(2)}</span>`;
-    const gate=data.rag.validation;$('#gate-diagnostic').hidden=false;$('#gate-diagnostic').innerHTML=`<b>证据阀门：${escapeHtml(gate.action)}</b><span>${escapeHtml(gate.reasons.join('；')||'证据包通过验证')}</span><span>类型命中：${escapeHtml(gate.matched_evidence_types.join('、')||'无')}</span>`;
+    renderEvaluationDashboard(data);
     $('#evidence-list').innerHTML=data.rag.evidence.length?`<h4>证据包</h4>${data.rag.evidence.map(item=>`<a href="${item.url}" target="_blank" rel="noreferrer"><b>[${item.id}] ${escapeHtml(item.title)}</b><span>${escapeHtml(item.organization)} · ${item.year} · ${escapeHtml(item.identifier)} · ${escapeHtml(item.quality)}</span></a>`).join('')}`:'<div class="empty-evidence">证据包为空；REQUIRED 策略下系统应拒绝确定性回答。</div>';
     $('#comparison').hidden=false;
   }catch(error){notice.textContent=`无法运行：${error.message}`;}finally{button.disabled=false;}

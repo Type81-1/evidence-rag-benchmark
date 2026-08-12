@@ -492,10 +492,21 @@ def retrieve(case: dict[str, object], corpus: list[Evidence], condition: str, li
     score_by_id = {item.id: score for score, item in ranked}
     selected_scores = [score_by_id[item.id] for item in selected]
     top_score = ranked[0][0] if ranked else 0.0
+    top5 = ranked[:5]
+    top5_source_ids = [item.source_id or item.id for _, item in top5]
+    top5_hit_ids = sorted(relevant & set(top5_source_ids))
     diagnostics: dict[str, object] = {
         "precision_at_k": round(precision, 3),
         "recall_at_k": round(recall, 3),
         "mrr": round(1 / first_rank, 3) if first_rank else 0.0,
+        "top5_coverage": round(len(top5_hit_ids) / len(relevant), 3) if relevant else 1.0,
+        "top5_hit": bool(top5_hit_ids),
+        "top5_hit_ids": top5_hit_ids,
+        "top5_expected_ids": sorted(relevant),
+        "top5_candidates": [
+            {"rank": index, "chunk_id": item.id, "source_id": item.source_id or item.id, "score": round(score, 4), "is_relevant": (item.source_id or item.id) in relevant}
+            for index, (score, item) in enumerate(top5, 1)
+        ],
         "top_score_ratio": round((selected_scores[0] / top_score), 3) if selected_scores and top_score else 0.0,
         "candidate_pool_size": len(candidate_pool),
         "metadata_filter": filter_diagnostics,
@@ -569,6 +580,28 @@ def verify_evidence_map(evidence_map: dict[str, dict[str, object]]) -> dict[str,
         if not chunk_id or not source_id or not identifier or not url.startswith("https://"):
             invalid.append(chunk_id)
     return {"valid": not invalid, "checked_chunks": len(evidence_map), "invalid_chunks": invalid}
+
+
+def build_citation_audit(answer: str, evidence_map: dict[str, dict[str, object]], unsupported: list[str]) -> list[dict[str, object]]:
+    """Return one auditable row for every cited claim in answer order."""
+    rows: list[dict[str, object]] = []
+    unsupported_ids = set(unsupported)
+    for match in re.finditer(r"\[([A-Z][A-Z0-9_-]*)]", answer):
+        citation_id = match.group(1)
+        entry = evidence_map.get(citation_id)
+        sentence_start = max(answer.rfind(mark, 0, match.start()) for mark in ("。", "！", "？", "\n")) + 1
+        claim = answer[sentence_start:match.start()].strip(" -\n")
+        rows.append({
+            "citation_id": citation_id,
+            "claim": claim[-240:] or "引用前未检测到可展示主张",
+            "registered": entry is not None,
+            "link_valid": bool(entry and str(entry.get("url") or "").startswith("https://")),
+            "support_status": "unregistered" if entry is None else ("needs_review" if citation_id in unsupported_ids else "supported"),
+            "source_id": entry.get("source_id") if entry else None,
+            "title": entry.get("title") if entry else None,
+            "url": entry.get("url") if entry else None,
+        })
+    return rows
 
 
 def proxy_status() -> dict[str, object]:
@@ -788,6 +821,9 @@ def run_case(
         rag_answer = _call_model(rag_prompt)
     else:
         rag_answer = _offline_answer(str(case["question"]), evidence, True, safety_note, validation)
+    baseline_metrics = score_answer(case, baseline_answer, [])
+    rag_metrics = score_answer(case, rag_answer, evidence, evidence_required=True)
+    evidence_map = build_evidence_map(evidence)
     return {
         "comparison_id": hashlib.sha256(f"{case['id']}|{condition}|{baseline_answer}|{rag_answer}".encode("utf-8")).hexdigest()[:16],
         "question": case,
@@ -799,15 +835,16 @@ def run_case(
             "rag_conditions": ["retrieval_result"],
             "interpretation": "A-vs-RAG is a system comparison; B/C/D isolate retrieval quality within the guarded RAG system.",
         },
-        "baseline": {"answer": baseline_answer, "prompt": baseline_prompt, "answer_hash": hashlib.sha256(baseline_answer.encode("utf-8")).hexdigest(), "metrics": score_answer(case, baseline_answer, [])},
+        "baseline": {"answer": baseline_answer, "prompt": baseline_prompt, "answer_hash": hashlib.sha256(baseline_answer.encode("utf-8")).hexdigest(), "metrics": baseline_metrics, "citation_audit": build_citation_audit(baseline_answer, {}, list(baseline_metrics["unsupported_citations"]))},
         "rag": {
             "answer": rag_answer,
             "prompt": rag_prompt,
             "answer_hash": hashlib.sha256(rag_answer.encode("utf-8")).hexdigest(),
-            "metrics": score_answer(case, rag_answer, evidence, evidence_required=True),
+            "metrics": rag_metrics,
             "evidence": [item.to_dict() for item in evidence],
-            "evidence_map": build_evidence_map(evidence),
-            "evidence_map_validation": verify_evidence_map(build_evidence_map(evidence)),
+            "evidence_map": evidence_map,
+            "evidence_map_validation": verify_evidence_map(evidence_map),
+            "citation_audit": build_citation_audit(rag_answer, evidence_map, list(rag_metrics["unsupported_citations"])),
             "retrieval_metrics": retrieval_metrics,
             "validation": validation,
         },

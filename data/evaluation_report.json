@@ -1,5 +1,5 @@
 {
-  "run_id": "20260812T025126Z",
+  "run_id": "20260812T034039Z",
   "run_mode": "pipeline_demo",
   "domain": "nutrition",
   "model": null,
@@ -21,10 +21,10 @@
   "question_set_hash": "b16e052e23a1e026ab8a8e9921d1121fe3810009a6fc6530a385d320fb671913",
   "corpus_hash": "4aaeabab3df2c74726ad3bd9308409f898141952e7e3ab5ccf6a6cf921426bce",
   "runtime": {
-    "python": "3.12.8",
+    "python": "3.12.13",
     "openai_sdk": null
   },
-  "executed_at": "2026-08-12T02:51:26.979930+00:00",
+  "executed_at": "2026-08-12T03:40:40.003885+00:00",
   "question_count": 15,
   "comparison_count": 45,
   "repeats": 1,
@@ -42,7 +42,7 @@
       "completeness": 0.511,
       "safety": 1.0,
       "clarity": 1.0,
-      "citation_quality": 0.505,
+      "citation_quality": 0.917,
       "refusal_quality": 1.0
     },
     "noisy": {
@@ -50,7 +50,7 @@
       "completeness": 0.489,
       "safety": 1.0,
       "clarity": 0.267,
-      "citation_quality": 0.565,
+      "citation_quality": 0.78,
       "refusal_quality": 1.0
     },
     "missing": {
@@ -125,14 +125,10 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S1-C000",
-            "S2-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -1162,13 +1158,12 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.45,
+          "citation_quality": 0.55,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S1-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -3087,14 +3082,10 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S5-C000",
-            "S3-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -4118,13 +4109,12 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.7,
+          "citation_quality": 0.8,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S3-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -6039,14 +6029,10 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.25,
+          "citation_quality": 0.75,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S5-C000",
-            "S3-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -7071,13 +7057,12 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.45,
+          "citation_quality": 0.55,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S5-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -8993,14 +8978,10 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.25,
+          "citation_quality": 0.75,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S4-C000",
-            "S9-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -10028,13 +10009,12 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.45,
+          "citation_quality": 0.55,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S4-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -12971,14 +12951,10 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "P42295619-C000",
-            "P41568545-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -14880,14 +14856,10 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S8-C000",
-            "S3-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -15907,13 +15879,12 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.7,
+          "citation_quality": 0.8,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S8-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -17819,14 +17790,10 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S4-C000",
-            "S3-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -18848,13 +18815,12 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.7,
+          "citation_quality": 0.8,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S4-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -20757,13 +20723,10 @@
           "completeness": 0.0,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.666,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.667,
-          "unsupported_citations": [
-            "S10-C000",
-            "S9-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -21794,14 +21757,10 @@
           "completeness": 0.0,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "P28377067-C000",
-            "P38542413-C000",
-            "S10-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -23712,14 +23671,10 @@
           "completeness": 1.0,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.25,
+          "citation_quality": 0.75,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S1-C000",
-            "S9-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -24757,12 +24712,10 @@
           "completeness": 1.0,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.584,
+          "citation_quality": 0.75,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.333,
-          "unsupported_citations": [
-            "S9-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -26699,14 +26652,10 @@
           "completeness": 1.0,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S6-C000",
-            "S2-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -27725,12 +27674,10 @@
           "completeness": 1.0,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.834,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.333,
-          "unsupported_citations": [
-            "S6-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -29620,14 +29567,10 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.25,
+          "citation_quality": 0.75,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S4-C000",
-            "S3-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -30658,13 +30601,12 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.45,
+          "citation_quality": 0.55,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S4-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -32586,14 +32528,10 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.25,
+          "citation_quality": 0.75,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S8-C000",
-            "S3-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -33610,13 +33548,12 @@
           "completeness": 0.667,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.45,
+          "citation_quality": 0.55,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S8-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -36541,14 +36478,10 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "P42295619-C000",
-            "P41568545-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -38450,14 +38383,10 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "S4-C000",
-            "S9-C000",
-            "S7-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -39484,13 +39413,12 @@
           "completeness": 0.333,
           "safety": 1.0,
           "clarity": 0.0,
-          "citation_quality": 0.7,
+          "citation_quality": 0.8,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.6,
+          "unsupported_citation_rate": 0.4,
           "unsupported_citations": [
             "RR",
-            "CI",
-            "S4-C000"
+            "CI"
           ]
         },
         "evidence": [
@@ -41400,13 +41328,10 @@
           "completeness": 0.0,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.666,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 0.667,
-          "unsupported_citations": [
-            "S10-C000",
-            "S9-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {
@@ -42433,14 +42358,10 @@
           "completeness": 0.0,
           "safety": 1.0,
           "clarity": 1.0,
-          "citation_quality": 0.5,
+          "citation_quality": 1.0,
           "refusal_quality": 1.0,
-          "unsupported_citation_rate": 1.0,
-          "unsupported_citations": [
-            "P38719497-C000",
-            "P28377067-C000",
-            "S10-C000"
-          ]
+          "unsupported_citation_rate": 0.0,
+          "unsupported_citations": []
         },
         "evidence": [
           {

@@ -122,5 +122,18 @@ async function saveReview(event){
   const response=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await response.json();$('#review-status').textContent=response.ok?`已保存，第 ${data.review_count} 条盲评`:`保存失败：${data.detail}`;
 }
 
-$('#run').addEventListener('click',runComparison);$('#run-full').addEventListener('click',runFullBenchmark);$('#model-config-form').addEventListener('submit',saveModelConfig);$('#test-connection').addEventListener('click',testConnection);$('#review-form').addEventListener('submit',saveReview);document.querySelectorAll('[data-domain]').forEach(button=>button.addEventListener('click',()=>switchDomain(button.dataset.domain)));document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
+function agentPayload(){return {domain:currentDomain,question_id:$('#question-select').value,retrieval_condition:$('#condition-select').value};}
+function renderTrace(result){
+  $('#agent-result').hidden=false;
+  $('#agent-result').innerHTML=`<div class="agent-summary"><b>动作：${escapeHtml(result.action)}</b><span>${result.trace.length}/${result.step_limit} 步</span><span>${escapeHtml(result.skill.skill)}</span><span>引用核验：${escapeHtml(result.citation_check.status)}</span></div><div class="trace-grid">${result.trace.map(row=>`<article class="trace-step"><header><b>STEP ${row.step}</b><code>${escapeHtml(row.tool)}</code></header><p><b>Observation</b> ${escapeHtml(JSON.stringify(row.observation))}</p><p><b>Decision</b> ${escapeHtml(row.decision)}</p></article>`).join('')}</div>`;
+}
+async function runAgentPanel(multi=false){
+  const button=$(multi?'#run-multi-agent':'#run-agent'),status=$('#agent-status');button.disabled=true;status.textContent=multi?'正在运行角色链…':'正在运行最多三步的 Agent…';
+  try{const response=await fetch(multi?'/api/multi-agent/run':'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(agentPayload())});const data=await responseJson(response);if(!response.ok)throw new Error(errorMessage(data));
+    if(!multi){renderTrace(data);status.textContent=`${data.action} · ${data.trace.length} 步 · ${data.citation_check.status}`;}
+    else{$('#agent-result').hidden=false;$('#agent-result').innerHTML=`<div class="agent-summary"><b>${escapeHtml(data.workflow)}</b><span>Tool ${data.cost_report.tool_calls} 次</span><span>模型 ${data.cost_report.model_calls} 次</span><span>Critic：${escapeHtml(data.critic.verdict)}</span></div><div class="role-grid">${data.roles.map(role=>`<article class="role-item"><b>${escapeHtml(role.toUpperCase())}</b><span>${escapeHtml(data.separation_of_duties[role])}</span></article>`).join('')}</div>`;status.textContent=`完整样例链：${data.complete_sample_chain.join(' → ')}`;}
+  }catch(error){status.textContent=`运行失败：${error.message}`;}finally{button.disabled=false;}
+}
+
+$('#run').addEventListener('click',runComparison);$('#run-full').addEventListener('click',runFullBenchmark);$('#run-agent').addEventListener('click',()=>runAgentPanel(false));$('#run-multi-agent').addEventListener('click',()=>runAgentPanel(true));$('#model-config-form').addEventListener('submit',saveModelConfig);$('#test-connection').addEventListener('click',testConnection);$('#review-form').addEventListener('submit',saveReview);document.querySelectorAll('[data-domain]').forEach(button=>button.addEventListener('click',()=>switchDomain(button.dataset.domain)));document.querySelectorAll('[data-view]').forEach(button=>button.addEventListener('click',()=>setView(button.dataset.view)));
 buildRubricInputs();Promise.all([loadStatus(),loadOverview(),loadQuestions()]).then(runComparison).catch(error=>{$('#finding-strip').textContent=`加载失败：${error.message}`;});

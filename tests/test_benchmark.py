@@ -363,3 +363,45 @@ def test_wiki_api_end_to_end(tmp_path: Path, monkeypatch) -> None:
     assert response.json()["wiki"]["action"] == "created"
     assert client.get("/api/wiki/query?q=限钠").json()["results"]
     assert client.get("/api/wiki/lint").json()["valid"] is True
+
+
+def test_d2_tools_are_structured_bounded_and_fail_visibly() -> None:
+    from d2_agent import TOOL_SCHEMAS, execute_tool
+
+    assert 3 <= len(TOOL_SCHEMAS) <= 10
+    assert all(item["input_schema"]["additionalProperties"] is False for item in TOOL_SCHEMAS.values())
+    assert all(item["permissions"] and item["timeout_seconds"] <= 10 for item in TOOL_SCHEMAS.values())
+    error = execute_tool("does_not_exist", {})
+    assert error["status"] == "error"
+    assert error["error"]["code"] == "unknown_tool"
+
+
+def test_d2_skill_agent_trace_and_urgent_branch() -> None:
+    from d2_agent import MAX_AGENT_STEPS, run_agent
+
+    result = run_agent("hypertension", "HTN-07", "good")
+    assert result["skill"]["loaded_on_demand"] is True
+    assert result["action"] == "escalate"
+    assert len(result["trace"]) <= MAX_AGENT_STEPS
+    assert all(set(row) >= {"step", "tool", "input", "observation", "decision", "timestamp"} for row in result["trace"])
+    assert "chain of thought" in result["trace_policy"]
+
+
+def test_d2_multi_agent_preserves_complete_sample_chain_and_boundaries() -> None:
+    from d2_agent import run_multi_agent
+
+    result = run_multi_agent("nutrition", "NUT-01", "good")
+    assert result["roles"] == ["researcher", "writer", "critic"]
+    assert len(result["complete_sample_chain"]) == 4
+    assert "no retrieval permission" in result["separation_of_duties"]["critic"]
+    assert result["cost_report"]["tool_calls"] == 5
+
+
+def test_d2_golden_set_records_four_layers_and_retains_failures() -> None:
+    from d2_evaluation import evaluate_d2
+
+    report = evaluate_d2()
+    assert report["status"] == "pass"
+    assert report["record_count"] >= 8
+    assert all(set(row["checks"]) == {"retrieval_quality", "citation_and_evidence", "answer_quality", "behavior_and_boundary"} for row in report["records"])
+    assert report["failures"] == []

@@ -15,6 +15,7 @@ import hypertension_benchmark
 import nutrition_benchmark
 from benchmark_engine import LLM_JUDGE_VERSION, PROMPT_VERSION, RETRIEVAL_VERSION, RUBRIC, RUBRIC_VERSION, RUNS_DIR, judge_answer, proxy_status, test_model_connection
 from course_compliance import build_compliance_report
+from d2_agent import TOOL_SCHEMAS, capability_manifest, execute_tool, run_agent, run_multi_agent
 from wiki_engine import WIKI_VERSION, build_topic_page, ingest_topic, lint_wiki, load_wiki, query_wiki
 
 
@@ -82,6 +83,17 @@ class AdvancedCompareRequest(BaseModel):
     update_wiki: bool = True
 
 
+class ToolCallRequest(BaseModel):
+    name: str = Field(min_length=2, max_length=50)
+    arguments: dict[str, object] = Field(default_factory=dict)
+
+
+class AgentRunRequest(BaseModel):
+    domain: str = Field(default="nutrition", pattern="^(nutrition|hypertension)$")
+    question_id: str = Field(min_length=2, max_length=50)
+    retrieval_condition: str = Field(default="good", pattern="^(good|noisy|missing)$")
+
+
 def _benchmark_module(domain: str):
     if domain == "nutrition":
         return nutrition_benchmark
@@ -131,6 +143,7 @@ def project_status() -> dict[str, object]:
         "rubric_version": RUBRIC_VERSION,
         "llm_judge_version": LLM_JUDGE_VERSION,
         "wiki_version": WIKI_VERSION,
+        "d2_capabilities": capability_manifest(),
         "ethics": {"no_phi": True, "ai_disclosure": True, "emergency_escalation": True},
     }
 
@@ -138,6 +151,37 @@ def project_status() -> dict[str, object]:
 @app.get("/api/course-compliance")
 def course_compliance() -> dict[str, object]:
     return build_compliance_report()
+
+
+@app.get("/api/d2-compliance")
+def d2_compliance() -> dict[str, object]:
+    return build_compliance_report()
+
+
+@app.get("/api/tools")
+def tools() -> dict[str, object]:
+    return {"count": len(TOOL_SCHEMAS), "tools": TOOL_SCHEMAS}
+
+
+@app.post("/api/tools/execute")
+def tool_execute(payload: ToolCallRequest) -> dict[str, object]:
+    return execute_tool(payload.name, payload.arguments)
+
+
+@app.post("/api/agent/run")
+def agent_run(payload: AgentRunRequest) -> dict[str, object]:
+    try:
+        return run_agent(payload.domain, payload.question_id, payload.retrieval_condition)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="未找到该测试问题") from exc
+
+
+@app.post("/api/multi-agent/run")
+def multi_agent_run(payload: AgentRunRequest) -> dict[str, object]:
+    try:
+        return run_multi_agent(payload.domain, payload.question_id, payload.retrieval_condition)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="未找到该测试问题") from exc
 
 
 def _model_error(exc: Exception) -> HTTPException:

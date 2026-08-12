@@ -1,0 +1,1022 @@
+{
+  "status": "pass",
+  "executed_at": "2026-08-12T03:40:29.362984+00:00",
+  "mode": "offline_pipeline_acceptance_not_model_performance",
+  "config": {
+    "golden_set": [
+      [
+        "nutrition",
+        "NUT-01",
+        "good"
+      ],
+      [
+        "nutrition",
+        "NUT-05",
+        "good"
+      ],
+      [
+        "nutrition",
+        "NUT-08",
+        "good"
+      ],
+      [
+        "nutrition",
+        "NUT-15",
+        "missing"
+      ],
+      [
+        "hypertension",
+        "HTN-01",
+        "good"
+      ],
+      [
+        "hypertension",
+        "HTN-07",
+        "good"
+      ],
+      [
+        "hypertension",
+        "HTN-08",
+        "good"
+      ],
+      [
+        "hypertension",
+        "HTN-15",
+        "missing"
+      ]
+    ],
+    "agent_version": "d2-evidence-agent-v1",
+    "rubric_version": "six-dimension-v1",
+    "max_steps": 3
+  },
+  "checks": {
+    "at_least_eight_fixed_records": true,
+    "four_evaluation_layers_recorded": true,
+    "all_agent_paths_stop_within_three_steps": true,
+    "failures_are_retained": true,
+    "multi_agent_has_distinct_roles_and_complete_chain": true
+  },
+  "record_count": 8,
+  "records": [
+    {
+      "question_id": "NUT-01",
+      "domain": "nutrition",
+      "condition": "good",
+      "expected_action": "answer",
+      "observed_action": "answer",
+      "answer_hash": "d0b4fd18d630f65b5d145427dc32201d915dde84edc9a11aff0ec06b38f6fcf8",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "nutrition",
+            "question_id": "NUT-01",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "answer",
+              "reasons": [],
+              "expected_evidence_type": "随机对照试验+指南",
+              "matched_evidence_types": [
+                "国际指南",
+                "循证推荐",
+                "随机对照试验"
+              ],
+              "searched_evidence_ids": [
+                "S1-C000",
+                "S2-C000",
+                "S7-C000"
+              ],
+              "searched_source_ids": [
+                "S1",
+                "S2",
+                "S7"
+              ],
+              "next_search": "补查与“随机对照试验+指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:19.503538+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 5,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:19.503538+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "d0b4fd18d630f65b5d145427dc32201d915dde84edc9a11aff0ec06b38f6fcf8",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "S1-C000",
+              "S2-C000",
+              "S7-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:20.013250+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "NUT-05",
+      "domain": "nutrition",
+      "condition": "good",
+      "expected_action": "abstain",
+      "observed_action": "abstain",
+      "answer_hash": "bf45bb08c4c2b270ee5d937ce55121dff17449a6eaf3e9f73767539be10f085c",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "nutrition",
+            "question_id": "NUT-05",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "abstain",
+              "reasons": [
+                "检索到的权威来源明确判定现有证据不足"
+              ],
+              "expected_evidence_type": "循证推荐",
+              "matched_evidence_types": [
+                "国际指南",
+                "循证推荐",
+                "随机对照试验"
+              ],
+              "searched_evidence_ids": [
+                "S1-C000",
+                "S3-C000",
+                "S7-C000"
+              ],
+              "searched_source_ids": [
+                "S1",
+                "S3",
+                "S7"
+              ],
+              "next_search": "补查与“循证推荐”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:20.855503+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 5,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:20.855503+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "bf45bb08c4c2b270ee5d937ce55121dff17449a6eaf3e9f73767539be10f085c",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "S1-C000",
+              "S3-C000",
+              "S7-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:21.767826+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "NUT-08",
+      "domain": "nutrition",
+      "condition": "good",
+      "expected_action": "abstain",
+      "observed_action": "abstain",
+      "answer_hash": "168464e8a244aa07358f48b850d86296c4f9de28165ff0b951a54efd34541c38",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "nutrition",
+            "question_id": "NUT-08",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "abstain",
+              "reasons": [
+                "问题要求个体化剂量或处方，超出证据问答边界"
+              ],
+              "expected_evidence_type": "慢性肾病指南",
+              "matched_evidence_types": [
+                "临床指南",
+                "循证推荐"
+              ],
+              "searched_evidence_ids": [
+                "S10-C000",
+                "S9-C000",
+                "S7-C000"
+              ],
+              "searched_source_ids": [
+                "S10",
+                "S9",
+                "S7"
+              ],
+              "next_search": "补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:22.304705+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 5,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:22.304705+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "168464e8a244aa07358f48b850d86296c4f9de28165ff0b951a54efd34541c38",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "S10-C000",
+              "S7-C000",
+              "S9-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:22.787884+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "NUT-15",
+      "domain": "nutrition",
+      "condition": "missing",
+      "expected_action": "abstain",
+      "observed_action": "abstain",
+      "answer_hash": "eefd5d327af0af85bbfd3e3d5d323aa23544b902a2af6c1a5e4cb357161d74af",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "nutrition",
+            "question_id": "NUT-15",
+            "condition": "missing",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 0,
+            "gate": {
+              "action": "abstain",
+              "reasons": [
+                "问题要求个体化剂量或处方，超出证据问答边界"
+              ],
+              "expected_evidence_type": "慢性肾病指南",
+              "matched_evidence_types": [],
+              "searched_evidence_ids": [],
+              "searched_source_ids": [],
+              "next_search": "补查与“慢性肾病指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "stop with evidence-aware refusal",
+          "timestamp": "2026-08-12T03:40:23.090546+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 0
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 0,
+            "adequate": false
+          },
+          "decision": "draft refusal",
+          "timestamp": "2026-08-12T03:40:23.090546+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "eefd5d327af0af85bbfd3e3d5d323aa23544b902a2af6c1a5e4cb357161d74af",
+            "evidence_count": 0
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [],
+            "registered_map_valid": true,
+            "citation_precision": 0.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:23.383409+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "HTN-01",
+      "domain": "hypertension",
+      "condition": "good",
+      "expected_action": "answer",
+      "observed_action": "answer",
+      "answer_hash": "8fef6e8a1484e6ae264e515e6a94043528630ece5199309bc11547b2cd0c8443",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "hypertension",
+            "question_id": "HTN-01",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "answer",
+              "reasons": [],
+              "expected_evidence_type": "临床指南",
+              "matched_evidence_types": [
+                "临床指南"
+              ],
+              "searched_evidence_ids": [
+                "H1-C000",
+                "H4-C000",
+                "H8-C000"
+              ],
+              "searched_source_ids": [
+                "H1",
+                "H4",
+                "H8"
+              ],
+              "next_search": "补查与“临床指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:24.075181+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 5,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:24.075181+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "8fef6e8a1484e6ae264e515e6a94043528630ece5199309bc11547b2cd0c8443",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "H1-C000",
+              "H4-C000",
+              "H8-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:24.648344+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "HTN-07",
+      "domain": "hypertension",
+      "condition": "good",
+      "expected_action": "escalate",
+      "observed_action": "escalate",
+      "answer_hash": "7e56089de8906fe22b1816443b05964953c13e0fb5f27a6d30d79df63da3104d",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "hypertension",
+            "question_id": "HTN-07",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "escalate",
+              "reasons": [
+                "检测到需要立即线下处理的危险信号"
+              ],
+              "expected_evidence_type": "患者安全指南",
+              "matched_evidence_types": [
+                "患者安全指南"
+              ],
+              "searched_evidence_ids": [
+                "H9-C000",
+                "H7-C000",
+                "P31598644-C000"
+              ],
+              "searched_source_ids": [
+                "H9",
+                "H7",
+                "P31598644"
+              ],
+              "next_search": "补查与“患者安全指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:25.282711+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 4,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:25.282711+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "7e56089de8906fe22b1816443b05964953c13e0fb5f27a6d30d79df63da3104d",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "H7-C000",
+              "H9-C000",
+              "P31598644-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:25.946831+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "HTN-08",
+      "domain": "hypertension",
+      "condition": "good",
+      "expected_action": "abstain",
+      "observed_action": "abstain",
+      "answer_hash": "50863db1af20136869436f1a97b5e50e57725dc04bb4caa5fd43e2321f9deea2",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "hypertension",
+            "question_id": "HTN-08",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "abstain",
+              "reasons": [
+                "问题要求个体化剂量或处方，超出证据问答边界"
+              ],
+              "expected_evidence_type": "药物治疗指南",
+              "matched_evidence_types": [
+                "国际指南"
+              ],
+              "searched_evidence_ids": [
+                "H10-C000",
+                "H7-C000",
+                "H2-C000"
+              ],
+              "searched_source_ids": [
+                "H10",
+                "H7",
+                "H2"
+              ],
+              "next_search": "补查与“药物治疗指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:26.625281+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 5,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:26.625281+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "50863db1af20136869436f1a97b5e50e57725dc04bb4caa5fd43e2321f9deea2",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "H10-C000",
+              "H2-C000",
+              "H7-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:27.255062+00:00"
+        }
+      ],
+      "passed": true
+    },
+    {
+      "question_id": "HTN-15",
+      "domain": "hypertension",
+      "condition": "missing",
+      "expected_action": "escalate",
+      "observed_action": "escalate",
+      "answer_hash": "858674e40c6202d4245e9062005c746a86b16906a4e9cc95c2778c24bf5287c7",
+      "checks": {
+        "retrieval_quality": true,
+        "citation_and_evidence": true,
+        "answer_quality": true,
+        "behavior_and_boundary": true
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "hypertension",
+            "question_id": "HTN-15",
+            "condition": "missing",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 0,
+            "gate": {
+              "action": "escalate",
+              "reasons": [
+                "检测到需要立即线下处理的危险信号"
+              ],
+              "expected_evidence_type": "患者安全指南",
+              "matched_evidence_types": [],
+              "searched_evidence_ids": [],
+              "searched_source_ids": [],
+              "next_search": "补查与“患者安全指南”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "stop with evidence-aware refusal",
+          "timestamp": "2026-08-12T03:40:27.670210+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 0
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 0,
+            "adequate": false
+          },
+          "decision": "draft refusal",
+          "timestamp": "2026-08-12T03:40:27.670210+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "858674e40c6202d4245e9062005c746a86b16906a4e9cc95c2778c24bf5287c7",
+            "evidence_count": 0
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [],
+            "registered_map_valid": true,
+            "citation_precision": 0.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:28.116119+00:00"
+        }
+      ],
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "multi_agent_sample": {
+    "workflow": "researcher-writer-critic-v1",
+    "question_id": "HTN-03",
+    "roles": [
+      "researcher",
+      "writer",
+      "critic"
+    ],
+    "separation_of_duties": {
+      "researcher": "registered corpus retrieval and evidence grading",
+      "writer": "organize only the supplied evidence into the fixed answer format",
+      "critic": "citation and safety-boundary verification; no retrieval permission"
+    },
+    "researcher": {
+      "agent_version": "d2-evidence-agent-v1",
+      "question_id": "HTN-03",
+      "domain": "hypertension",
+      "condition": "good",
+      "action": "answer",
+      "answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "evidence": [
+        {
+          "id": "H2-C000",
+          "topic": "long_term",
+          "title": "Guideline for the pharmacological treatment of hypertension in adults",
+          "organization": "WHO",
+          "year": 2021,
+          "summary": "达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。",
+          "url": "https://www.who.int/publications/i/item/9789240033986",
+          "quality": "国际指南",
+          "identifier": "WHO-HTN-2021",
+          "keywords": [
+            "降压药",
+            "长期治疗",
+            "持续随访",
+            "不能自行停药"
+          ],
+          "source_id": "H2",
+          "chunk_id": "H2-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 49,
+          "content_hash": "06f165a953e674f62aa4dd29bbfb15b00e6b75fcc8f90487e5bce96fd84d94f1",
+          "identifier_type": "registry"
+        },
+        {
+          "id": "H3-C000",
+          "topic": "intensive",
+          "title": "A Randomized Trial of Intensive versus Standard Blood-Pressure Control",
+          "organization": "SPRINT Research Group",
+          "year": 2015,
+          "summary": "在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/26551272/",
+          "quality": "随机对照试验",
+          "identifier": "PMID:26551272",
+          "keywords": [
+            "强化降压",
+            "心血管事件",
+            "全因死亡",
+            "不良事件",
+            "SPRINT"
+          ],
+          "source_id": "H3",
+          "chunk_id": "H3-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 66,
+          "content_hash": "6e4e9114c036309529dc9d060bea7a3b1109704d39578f0940725252ad41aa0b",
+          "identifier_type": "PMID"
+        },
+        {
+          "id": "H8-C000",
+          "topic": "safety",
+          "title": "2018 ESC/ESH Guidelines for the management of arterial hypertension",
+          "organization": "ESC/ESH",
+          "year": 2018,
+          "summary": "降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/30165516/",
+          "quality": "临床指南",
+          "identifier": "PMID:30165516",
+          "keywords": [
+            "血压正常",
+            "自行停药",
+            "治疗有效",
+            "医生随访"
+          ],
+          "source_id": "H8",
+          "chunk_id": "H8-C000",
+          "chunk_index": 0,
+          "token_count": 1,
+          "char_start": 0,
+          "char_end": 48,
+          "content_hash": "dc4bb99181a3b9f6c14c12fdacb2ed46f17c9f4939b1c3d2d59a474f8e834e75",
+          "identifier_type": "PMID"
+        }
+      ],
+      "skill": {
+        "status": "ok",
+        "skill": "evidence-grade-v1",
+        "loaded_on_demand": true,
+        "items": [
+          {
+            "chunk_id": "H2-C000",
+            "quality": "国际指南",
+            "grade": 5,
+            "identifier": "WHO-HTN-2021",
+            "url": "https://www.who.int/publications/i/item/9789240033986"
+          },
+          {
+            "chunk_id": "H3-C000",
+            "quality": "随机对照试验",
+            "grade": 4,
+            "identifier": "PMID:26551272",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/26551272/"
+          },
+          {
+            "chunk_id": "H8-C000",
+            "quality": "临床指南",
+            "grade": 5,
+            "identifier": "PMID:30165516",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/30165516/"
+          }
+        ],
+        "strongest_grade": 5,
+        "adequate_for_general_answer": true,
+        "limitations": []
+      },
+      "citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "H2-C000",
+          "H3-C000",
+          "H8-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      },
+      "trace": [
+        {
+          "step": 1,
+          "tool": "search_evidence",
+          "input": {
+            "domain": "hypertension",
+            "question_id": "HTN-03",
+            "condition": "good",
+            "limit": 3
+          },
+          "observation": {
+            "status": "ok",
+            "result_count": 3,
+            "gate": {
+              "action": "answer",
+              "reasons": [],
+              "expected_evidence_type": "随机对照试验",
+              "matched_evidence_types": [
+                "随机对照试验"
+              ],
+              "searched_evidence_ids": [
+                "H2-C000",
+                "H3-C000",
+                "H8-C000"
+              ],
+              "searched_source_ids": [
+                "H2",
+                "H3",
+                "H8"
+              ],
+              "next_search": "补查与“随机对照试验”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。"
+            }
+          },
+          "decision": "grade evidence",
+          "timestamp": "2026-08-12T03:40:28.753714+00:00"
+        },
+        {
+          "step": 2,
+          "tool": "assess_evidence_grade",
+          "input": {
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "strongest_grade": 5,
+            "adequate": true
+          },
+          "decision": "draft grounded answer",
+          "timestamp": "2026-08-12T03:40:28.753714+00:00"
+        },
+        {
+          "step": 3,
+          "tool": "verify_citations",
+          "input": {
+            "answer_hash": "fa3f954ec6f706914b9f9413f944813b166399ccf28e6aa4eb9981239fc8cda5",
+            "evidence_count": 3
+          },
+          "observation": {
+            "status": "ok",
+            "cited_chunk_ids": [
+              "H2-C000",
+              "H3-C000",
+              "H8-C000"
+            ],
+            "registered_map_valid": true,
+            "citation_precision": 1.0,
+            "unsupported_citation_rate": 0.0,
+            "unsupported": []
+          },
+          "decision": "return checked answer",
+          "timestamp": "2026-08-12T03:40:29.362984+00:00"
+        }
+      ],
+      "trace_policy": "actions, observations, and decisions only; no private chain of thought",
+      "step_limit": 3,
+      "stopped_within_limit": true
+    },
+    "writer": {
+      "role": "writer",
+      "input_hash": "f56e68243375051b7efa8637a3a3404fcd823e4535fef8d8c20065a1d75c00ce",
+      "answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+      "output_schema": [
+        "answer",
+        "citations",
+        "limitations",
+        "safety_boundary"
+      ]
+    },
+    "critic": {
+      "role": "critic",
+      "citation_check": {
+        "status": "ok",
+        "cited_chunk_ids": [
+          "H2-C000",
+          "H3-C000",
+          "H8-C000"
+        ],
+        "registered_map_valid": true,
+        "citation_precision": 1.0,
+        "unsupported_citation_rate": 0.0,
+        "unsupported": []
+      },
+      "issues": [],
+      "verdict": "accept"
+    },
+    "revision": {
+      "performed": false,
+      "reason": [
+        "no revision required"
+      ]
+    },
+    "final_answer": "## 结论\n\n检索结果提示该问题需要结合证据适用人群谨慎判断。\n\n## 依据\n\n- 达到治疗指征的成人应接受规范降压治疗，并根据血压反应、合并症和风险持续随访；药物方案不能自行调整。 [H2-C000]\n- 在部分心血管高风险且无糖尿病的成人中，强化收缩压控制降低主要心血管事件和全因死亡，但低血压、电解质异常和急性肾损伤等不良事件更常见。 [H3-C000]\n- 降压治疗需要随访疗效和不良反应。血压正常通常代表治疗有效，不能据此推断高血压消失或自行停药安全。 [H8-C000]\n\n## 局限\n\n这是离线证据摘录，不是模型性能结果，也未替代全文偏倚评价。\n\n## 安全提示\n\n仅用于临床证据教学与方法评测，不替代诊断、处方、剂量调整或停药建议；胸痛、呼吸困难或严重血压升高等情况应立即就医。",
+    "complete_sample_chain": [
+      "researcher evidence packet",
+      "writer draft",
+      "critic review",
+      "final answer"
+    ],
+    "cost_report": {
+      "model_calls": 0,
+      "tool_calls": 5,
+      "agent_steps": 3,
+      "offline_demo": true
+    }
+  }
+}

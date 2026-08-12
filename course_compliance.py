@@ -13,6 +13,8 @@ def build_compliance_report() -> dict[str, object]:
     import hypertension_benchmark
     import nutrition_benchmark
     from advanced_evaluation import evaluate_advanced_features
+    from d2_agent import MAX_AGENT_STEPS, TOOL_SCHEMAS, capability_manifest, run_agent, run_multi_agent
+    from d2_evaluation import evaluate_d2
 
     corpus_path = ROOT / "data" / "pubmed_corpus.json"
     payload = json.loads(corpus_path.read_text(encoding="utf-8")) if corpus_path.exists() else {"documents": []}
@@ -27,6 +29,9 @@ def build_compliance_report() -> dict[str, object]:
     sample_map = benchmark_engine.build_evidence_map(sample_evidence)
     sample_map_validation = benchmark_engine.verify_evidence_map(sample_map)
     advanced_evaluation = evaluate_advanced_features()
+    d2_evaluation = evaluate_d2()
+    sample_agent = run_agent("hypertension", "HTN-07", "good")
+    sample_multi_agent = run_multi_agent("nutrition", "NUT-01", "good")
     offline_reports = []
     for report_path in (ROOT / "data" / "evaluation_report.json", ROOT / "data" / "hypertension_evaluation_report.json"):
         offline_reports.append(json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {})
@@ -79,6 +84,19 @@ def build_compliance_report() -> dict[str, object]:
             for key in ("wiki_create_deduplicate_update_history", "wiki_query_returns_topic", "wiki_lint_has_no_errors")
         ),
         "advanced_automated_evaluation_passes": advanced_evaluation["status"] == "pass",
+        "d2_has_three_single_purpose_structured_tools": len(TOOL_SCHEMAS) == 3 and all(
+            schema["input_schema"].get("additionalProperties") is False
+            and schema.get("permissions") and schema.get("timeout_seconds")
+            for schema in TOOL_SCHEMAS.values()
+        ),
+        "d2_reusable_skill_is_loaded_on_demand": bool(sample_agent["skill"]["loaded_on_demand"]),
+        "d2_agent_branches_and_stops_with_trace": sample_agent["action"] == "escalate"
+        and len(sample_agent["trace"]) <= MAX_AGENT_STEPS
+        and sample_agent["trace_policy"].startswith("actions"),
+        "d2_four_layer_golden_set_evaluation_passes": d2_evaluation["status"] == "pass",
+        "d2_multi_agent_has_role_boundaries_and_complete_chain": len(set(sample_multi_agent["roles"])) >= 2
+        and len(sample_multi_agent["complete_sample_chain"]) == 4
+        and sample_multi_agent["critic"]["verdict"] in {"accept", "revise"},
     }
     return {
         "status": "pass" if all(checks.values()) else "fail",
@@ -94,6 +112,12 @@ def build_compliance_report() -> dict[str, object]:
             "interpretation": "Advanced capabilities are composable priorities, not mutually exclusive routes.",
         },
         "advanced_evaluation": {"status": advanced_evaluation["status"], "checks": advanced_evaluation["checks"]},
+        "d2am": {
+            "source": "D2AM.pdf (52 image pages, visually reviewed)",
+            "capabilities": capability_manifest(),
+            "evaluation": {"status": d2_evaluation["status"], "checks": d2_evaluation["checks"], "record_count": d2_evaluation["record_count"], "failure_count": len(d2_evaluation["failures"])},
+            "implemented_levels": ["基础: >=8 evaluation records", "进阶: Tool + Skill + workflow", "挑战: <=3-step Agent trace", "挑战: Researcher-Writer-Critic complete chain"],
+        },
         "benchmark_reports": [
             {"domain": report.get("domain"), "question_count": report.get("question_count"), "comparison_count": report.get("comparison_count"), "arms": list(report.get("summary", {}))}
             for report in offline_reports

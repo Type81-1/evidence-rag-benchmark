@@ -702,7 +702,15 @@ def _citation_support(answer: str, evidence: list[Evidence]) -> tuple[float, flo
         item = registry.get(item_id)
         if not item:
             continue
-        sentence = next((part for part in re.split(r"[。！？\n]", answer) if f"[{item_id}]" in part), "")
+        marker = f"[{item_id}]"
+        marker_start = answer.find(marker)
+        prefix = answer[:marker_start] if marker_start >= 0 else ""
+        section_heading = prefix.rsplit("## ", 1)[-1].splitlines()[0].strip() if "## " in prefix else ""
+        if section_heading == "已检索":
+            supported += 1
+            continue
+        clauses = [part.strip() for part in re.split(r"[。！？\n]", prefix) if part.strip()]
+        sentence = clauses[-1] if clauses else ""
         claim_tokens = set(_tokenize(sentence))
         evidence_tokens = set(_tokenize(item.summary))
         if len(claim_tokens & evidence_tokens) >= 2:

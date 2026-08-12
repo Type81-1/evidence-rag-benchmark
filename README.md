@@ -98,6 +98,12 @@ Windows 下后端会自动读取当前系统代理，并在代理端口可用时
 
 课件把能力分为基础必做、进阶建议和挑战选做，强调先完成最小闭环；这些能力不是互斥路线。本项目现已实现全部列出能力：passage 分块、词法/向量双路召回、真实 metadata 过滤、查询改写、RRF、独立重排、MMR、互补证据、多轮检索、evidence map、Wiki ingest/query/update/lint，以及自动化评测。每项均由 `advanced_evaluation.py` 执行行为验收，而不是只检查接口是否存在。
 
+## D2AM Tool、Skill、Agent 与多角色挑战
+
+项目已按 D2AM 的最高档实现三项单一职责 Tool、按需加载的 `evidence-grade-v1` Skill、最多三轮且保留结构化 trace 的动态 Agent，以及 Researcher→Writer→Critic 完整样例链。Agent 只记录 action、observation 和 decision，不输出私有思维链；所有工具限制为登记语料只读、最多五条结果、显式超时和结构化失败。
+
+`d2_evaluation.py` 使用固定 8 条 Golden Set 对检索质量、引用与证据、回答质量、行为与边界四层逐项验收，并原样保存失败样本。完整逐页对照见 `docs/d2am-compliance.md`。
+
 ## 启动与测试
 
 ```powershell
@@ -106,6 +112,7 @@ python scripts/enrich_pubmed_metadata.py
 python scripts/export_question_set.py
 python course_compliance.py
 python advanced_evaluation.py
+python d2_evaluation.py
 python -m pytest -q
 python -m uvicorn app:app --host 127.0.0.1 --port 8001
 ```
@@ -130,6 +137,10 @@ python evaluation.py --domain hypertension --output data/hypertension_evaluation
 - `POST /api/model-config`：把 Key、模型和推理强度写入当前服务内存。
 - `POST /api/model-connection-test`：发送最小请求并返回结构化连接诊断。
 - `GET /api/course-compliance`：逐项返回课件静态要求的机器可读检查结果。
+- `GET /api/d2-compliance`：返回 D2AM Tool/Skill/Agent/评估/多角色挑战验收结果。
+- `GET /api/tools`、`POST /api/tools/execute`：查看并调用三个结构化 Tool。
+- `POST /api/agent/run`：执行最多三轮的证据 Agent，并返回可复查 trace。
+- `POST /api/multi-agent/run`：执行 Researcher→Writer→Critic 完整样例链。
 - `POST /api/wiki/ingest`：从登记题目与检索证据生成或更新主题页。
 - `GET /api/wiki/query?q=...`：查询主题页及其 evidence map。
 - `GET /api/wiki/lint`：检查缺失/未知引用、非法 URL、过期页和孤立页。

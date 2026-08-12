@@ -17,6 +17,7 @@
       <p class="rail-label">实验导航</p>
       <a class="rail-item active" href="#overview">评测总览</a>
       <a class="rail-item" href="#lab">单题实验室</a>
+      <a class="rail-item" href="#agent">Agent Trace</a>
       <a class="rail-item" href="#review">盲评录入</a>
       <div class="rail-rule"></div>
       <p class="rail-label">锁定设计</p>
@@ -80,6 +81,12 @@
             <div id="rag-metrics" class="mini-metrics design-only"></div><div id="rag-answer" class="answer"></div><div id="evidence-list" class="evidence-list design-only"></div>
           </article>
         </div>
+      </section>
+
+      <section id="agent" class="section agent-section">
+        <div class="section-title"><div><p class="eyebrow">D2 AGENT TRACE</p><h2>动态路径与角色链</h2></div><span class="step">最多 3 步 · 只显示行动、观察与决策</span></div>
+        <div class="agent-actions"><button id="run-agent" type="button">运行证据 Agent</button><button id="run-multi-agent" type="button" class="secondary-button">运行三角色链</button><span id="agent-status">使用当前题目与检索条件</span></div>
+        <div id="agent-result" class="agent-result" hidden></div>
       </section>
 
       <section id="review" class="section review-section">

@@ -62,12 +62,26 @@ def evaluate_d2() -> dict[str, object]:
             failures.append(record)
 
     multi = run_multi_agent("hypertension", "HTN-03", "good")
+    multi_boundary = run_multi_agent("hypertension", "HTN-08", "good")
+    single_normal = run_agent("nutrition", "NUT-01", "good")
+    single_boundary = run_agent("nutrition", "NUT-08", "good")
     checks = {
         "at_least_eight_fixed_records": len(records) >= 8,
         "four_evaluation_layers_recorded": all(set(row["checks"]) == {"retrieval_quality", "citation_and_evidence", "answer_quality", "behavior_and_boundary"} for row in records),
         "all_agent_paths_stop_within_three_steps": all(len(row["trace"]) <= MAX_AGENT_STEPS for row in records),
+        "single_agent_outputs_depend_on_the_question": single_normal["question"] != single_boundary["question"]
+        and single_normal["trace"][0]["observation"]["evidence"] != single_boundary["trace"][0]["observation"]["evidence"]
+        and single_normal["trace"][1]["decision"] != single_boundary["trace"][1]["decision"]
+        and single_normal["answer"] != single_boundary["answer"],
         "failures_are_retained": all(row in failures for row in records if not row["passed"]),
         "multi_agent_has_distinct_roles_and_complete_chain": len(set(multi["roles"])) >= 2 and len(multi["complete_sample_chain"]) == 4,
+        "multi_agent_outputs_depend_on_the_question": multi["question"] != multi_boundary["question"]
+        and multi["researcher"]["evidence_packet"] != multi_boundary["researcher"]["evidence_packet"]
+        and multi["writer"]["draft"] != multi_boundary["writer"]["draft"]
+        and multi["final_answer_hash"] != multi_boundary["final_answer_hash"],
+        "multi_agent_handoffs_and_final_verification_are_valid": set(multi["writer"]["evidence_ids_used"])
+        == {item["chunk_id"] for item in multi["researcher"]["evidence_packet"]}
+        and multi["revision"]["final_citation_check"]["status"] == "ok",
     }
     return {
         "status": "pass" if all(checks.values()) and not failures else "fail",
@@ -79,6 +93,8 @@ def evaluate_d2() -> dict[str, object]:
         "records": records,
         "failures": failures,
         "multi_agent_sample": multi,
+        "multi_agent_boundary_sample": multi_boundary,
+        "single_agent_samples": [single_normal, single_boundary],
     }
 
 

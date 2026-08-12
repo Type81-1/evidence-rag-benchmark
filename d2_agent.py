@@ -185,22 +185,75 @@ def run_agent(domain: str, question_id: str, condition: str = "good") -> dict[st
     search = execute_tool("search_evidence", {"domain": domain, "question_id": question_id, "condition": condition, "limit": 3})
     evidence = list(search.get("results") or [])
     gate = (search.get("diagnostics") or {}).get("validation") or {"action": "abstain", "reasons": ["retrieval failed"]}
-    trace.append(_trace(1, "search_evidence", {"domain": domain, "question_id": question_id, "condition": condition, "limit": 3}, {"status": search["status"], "result_count": len(evidence), "gate": gate}, "grade evidence" if evidence else "stop with evidence-aware refusal"))
+    trace.append(_trace(
+        1,
+        "search_evidence",
+        {"domain": domain, "question_id": question_id, "question": case["question"], "condition": condition, "limit": 3},
+        {
+            "status": search["status"],
+            "question": case["question"],
+            "result_count": len(evidence),
+            "evidence": [
+                {
+                    "chunk_id": item["chunk_id"],
+                    "title": item["title"],
+                    "quality": item["quality"],
+                    "organization": item["organization"],
+                    "year": item["year"],
+                }
+                for item in evidence
+            ],
+            "gate": gate,
+        },
+        (
+            f"检索到 {len(evidence)} 条登记证据；门控决定为 {gate.get('action')}。"
+            if evidence
+            else f"当前问题未检索到登记证据；门控决定为 {gate.get('action')}。"
+        ),
+    ))
 
     grade = execute_tool("assess_evidence_grade", {"evidence": evidence})
-    trace.append(_trace(2, "assess_evidence_grade", {"evidence_count": len(evidence)}, {"status": grade["status"], "strongest_grade": grade.get("strongest_grade"), "adequate": grade.get("adequate_for_general_answer")}, "draft grounded answer" if evidence else "draft refusal"))
+    trace.append(_trace(
+        2,
+        "assess_evidence_grade",
+        {"question_id": question_id, "evidence_ids": [item["chunk_id"] for item in evidence]},
+        {
+            "status": grade["status"],
+            "items": grade.get("items", []),
+            "strongest_grade": grade.get("strongest_grade"),
+            "adequate": grade.get("adequate_for_general_answer"),
+            "limitations": grade.get("limitations", []),
+        },
+        (
+            f"最高证据等级为 {grade.get('strongest_grade')}，进入针对“{case['topic']}”的有引用回答。"
+            if evidence and gate.get("action") == "answer"
+            else f"门控要求 {gate.get('action')}，生成说明检索结果、缺口和下一步的受控回答。"
+        ),
+    ))
 
     evidence_objects = _evidence_from_payload(evidence)
     result = module.compare_question(question_id, condition, live=False)
     draft = str(result["rag"]["answer"])
     citation_check = execute_tool("verify_citations", {"answer": draft, "evidence": evidence})
-    trace.append(_trace(3, "verify_citations", {"answer_hash": hashlib.sha256(draft.encode()).hexdigest(), "evidence_count": len(evidence)}, citation_check, "return checked answer" if citation_check["status"] == "ok" or not evidence else "return guarded answer with verification warning"))
+    trace.append(_trace(
+        3,
+        "verify_citations",
+        {"question_id": question_id, "answer_hash": hashlib.sha256(draft.encode()).hexdigest(), "evidence_count": len(evidence)},
+        {**citation_check, "answer_preview": draft[:240]},
+        (
+            f"引用核验通过：{len(citation_check['cited_chunk_ids'])} 个引用均可回查，返回当前问题的回答。"
+            if citation_check["status"] == "ok"
+            else f"发现 {len(citation_check['unsupported'])} 个未支持引用，返回带核验警告的受控回答。"
+        ),
+    ))
     action = str(gate.get("action") or "abstain")
     return {
         "agent_version": AGENT_VERSION,
         "question_id": question_id,
         "domain": domain,
         "condition": condition,
+        "question": case["question"],
+        "topic": case["topic"],
         "action": action,
         "answer": draft,
         "evidence": [item.to_dict() for item in evidence_objects],
@@ -214,21 +267,119 @@ def run_agent(domain: str, question_id: str, condition: str = "good") -> dict[st
 
 
 def run_multi_agent(domain: str, question_id: str, condition: str = "good") -> dict[str, object]:
-    researcher = run_agent(domain, question_id, condition)
-    evidence = list(researcher["evidence"])
+    _, case = _case(domain, question_id)
+    agent_result = run_agent(domain, question_id, condition)
+    evidence = list(agent_result["evidence"])
+    gate = dict(agent_result["trace"][0]["observation"].get("gate") or {})
+    role_by_chunk = {
+        str(item.get("chunk_id")): str(item.get("role"))
+        for item in execute_tool(
+            "search_evidence",
+            {"domain": domain, "question_id": question_id, "condition": condition, "limit": 3},
+        ).get("diagnostics", {}).get("selected_roles", [])
+    }
+    evidence_packet = [
+        {
+            "chunk_id": item["chunk_id"],
+            "source_id": item["source_id"],
+            "title": item["title"],
+            "organization": item["organization"],
+            "year": item["year"],
+            "quality": item["quality"],
+            "grade": next((row["grade"] for row in agent_result["skill"]["items"] if row["chunk_id"] == item["chunk_id"]), 1),
+            "role": role_by_chunk.get(str(item["chunk_id"]), "supporting"),
+            "summary": item["summary"],
+            "identifier": item["identifier"],
+            "url": item["url"],
+        }
+        for item in evidence
+    ]
+    researcher = {
+        "role": "researcher",
+        "question": case["question"],
+        "search_plan": {
+            "condition": condition,
+            "target_evidence_type": gate.get("expected_evidence_type"),
+            "candidate_pool_size": agent_result["trace"][0]["observation"].get("result_count"),
+            "selection_limit": 3,
+        },
+        "evidence_packet": evidence_packet,
+        "evidence_grade": agent_result["skill"],
+        "gate": gate,
+        "gaps": list(gate.get("reasons") or []) + ([] if evidence else ["没有可供 Writer 使用的登记证据"]),
+        "handoff": "仅使用 evidence_packet 中的登记片段写作；保留适用人群、局限和安全边界。",
+    }
+    draft = str(agent_result["answer"])
     writer = {
         "role": "writer",
+        "question": case["question"],
         "input_hash": hashlib.sha256(json.dumps(evidence, sort_keys=True, ensure_ascii=False).encode()).hexdigest(),
-        "answer": researcher["answer"],
+        "instructions_received": researcher["handoff"],
+        "evidence_ids_used": [item["chunk_id"] for item in evidence_packet],
+        "draft": draft,
+        "answer": draft,
+        "sections": [heading for heading in ("结论", "依据", "已检索", "缺失证据", "下一步", "局限", "安全提示") if f"## {heading}" in draft],
         "output_schema": ["answer", "citations", "limitations", "safety_boundary"],
     }
-    critic_check = execute_tool("verify_citations", {"answer": writer["answer"], "evidence": evidence})
-    issues = list(critic_check.get("unsupported") or [])
-    critic = {"role": "critic", "citation_check": critic_check, "issues": issues, "verdict": "accept" if not issues else "revise"}
-    final_answer = writer["answer"]
+    critic_check = execute_tool("verify_citations", {"answer": draft, "evidence": evidence})
+    required_sections = ("结论", "安全提示") + (("已检索", "缺失证据", "下一步") if agent_result["action"] == "abstain" else ("依据", "局限"))
+    missing_sections = [heading for heading in required_sections if f"## {heading}" not in draft]
+    unsafe_phrases = ("立即停药", "建议自行停药", "可以自行停药", "建议加倍剂量", "应该加倍剂量")
+    has_safety_boundary = "## 安全提示" in draft and any(term in draft for term in ("不替代", "专业人员", "医生", "营养师", "立即就医"))
+    safety_ok = has_safety_boundary and not any(term in draft for term in unsafe_phrases)
+    issues: list[dict[str, str]] = []
+    if critic_check["status"] != "ok":
+        issues.append({"code": "citation_support", "message": f"存在未获登记证据支持的引用：{', '.join(critic_check['unsupported'])}"})
+    if missing_sections:
+        issues.append({"code": "answer_structure", "message": f"缺少必要部分：{'、'.join(missing_sections)}"})
+    if not safety_ok:
+        issues.append({"code": "safety_boundary", "message": "回答没有完整满足医疗安全边界或紧急升级要求"})
+    if agent_result["action"] == "escalate" and not any(term in draft for term in ("立即就医", "急救", "急诊")):
+        issues.append({"code": "urgent_escalation", "message": "检测到急症，但草稿未明确要求立即就医或呼叫急救"})
+    recommendations = [item["message"] for item in issues] or ["引用、结构和安全边界均通过，无需修改。"]
+    critic = {
+        "role": "critic",
+        "question": case["question"],
+        "citation_check": critic_check,
+        "checks": {
+            "citation_support": critic_check["status"] == "ok",
+            "required_structure": not missing_sections,
+            "safety_boundary": safety_ok,
+            "urgent_escalation": agent_result["action"] != "escalate" or any(term in draft for term in ("立即就医", "急救", "急诊")),
+        },
+        "operational_metrics": {
+            "citation_precision": critic_check["citation_precision"],
+            "unsupported_citation_rate": critic_check["unsupported_citation_rate"],
+            "required_sections_present": len(required_sections) - len(missing_sections),
+            "required_sections_total": len(required_sections),
+        },
+        "issues": issues,
+        "recommendations": recommendations,
+        "verdict": "accept" if not issues else "revise",
+    }
+    revised_answer = draft
+    changes: list[str] = []
+    if issues:
+        if "安全提示" in missing_sections:
+            revised_answer += "\n\n## 安全提示\n\n本回答仅用于教学与研究，不替代专业医疗判断。"
+            changes.append("补充安全提示")
+        if agent_result["action"] == "escalate" and not any(term in revised_answer for term in ("立即就医", "急救", "急诊")):
+            revised_answer = "## 结论\n\n检测到紧急危险信号，应立即就医或呼叫急救。\n\n" + revised_answer
+            changes.append("补充急症升级")
+    final_check = execute_tool("verify_citations", {"answer": revised_answer, "evidence": evidence})
+    revision = {
+        "performed": revised_answer != draft,
+        "changes": changes,
+        "reason": recommendations,
+        "revised_answer": revised_answer,
+        "final_citation_check": final_check,
+    }
     return {
-        "workflow": "researcher-writer-critic-v1",
+        "workflow": "researcher-writer-critic-v2",
         "question_id": question_id,
+        "question": case["question"],
+        "domain": domain,
+        "condition": condition,
         "roles": ["researcher", "writer", "critic"],
         "separation_of_duties": {
             "researcher": "registered corpus retrieval and evidence grading",
@@ -238,10 +389,11 @@ def run_multi_agent(domain: str, question_id: str, condition: str = "good") -> d
         "researcher": researcher,
         "writer": writer,
         "critic": critic,
-        "revision": {"performed": bool(issues), "reason": issues or ["no revision required"]},
-        "final_answer": final_answer,
+        "revision": revision,
+        "final_answer": revised_answer,
+        "final_answer_hash": hashlib.sha256(revised_answer.encode()).hexdigest(),
         "complete_sample_chain": ["researcher evidence packet", "writer draft", "critic review", "final answer"],
-        "cost_report": {"model_calls": 0, "tool_calls": 5, "agent_steps": len(researcher["trace"]), "offline_demo": True},
+        "cost_report": {"model_calls": 0, "tool_calls": 6, "agent_steps": len(agent_result["trace"]), "offline_demo": True},
     }
 
 

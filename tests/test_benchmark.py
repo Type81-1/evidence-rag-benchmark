@@ -385,6 +385,24 @@ def test_d2_skill_agent_trace_and_urgent_branch() -> None:
     assert len(result["trace"]) <= MAX_AGENT_STEPS
     assert all(set(row) >= {"step", "tool", "input", "observation", "decision", "timestamp"} for row in result["trace"])
     assert "chain of thought" in result["trace_policy"]
+    assert result["question"] == hypertension_benchmark.QUESTIONS[6]["question"]
+    assert result["trace"][0]["observation"]["question"] == result["question"]
+    assert result["trace"][0]["observation"]["evidence"]
+    assert result["trace"][2]["observation"]["answer_preview"]
+
+
+def test_d2_single_agent_trace_outputs_change_with_the_selected_question() -> None:
+    from d2_agent import run_agent
+
+    normal = run_agent("nutrition", "NUT-01", "good")
+    boundary = run_agent("nutrition", "NUT-08", "good")
+    assert normal["question"] != boundary["question"]
+    assert normal["action"] == "answer"
+    assert boundary["action"] == "abstain"
+    assert normal["trace"][0]["observation"]["evidence"] != boundary["trace"][0]["observation"]["evidence"]
+    assert normal["trace"][1]["decision"] != boundary["trace"][1]["decision"]
+    assert normal["trace"][2]["observation"]["answer_preview"] != boundary["trace"][2]["observation"]["answer_preview"]
+    assert normal["answer"] != boundary["answer"]
 
 
 def test_d2_multi_agent_preserves_complete_sample_chain_and_boundaries() -> None:
@@ -394,7 +412,27 @@ def test_d2_multi_agent_preserves_complete_sample_chain_and_boundaries() -> None
     assert result["roles"] == ["researcher", "writer", "critic"]
     assert len(result["complete_sample_chain"]) == 4
     assert "no retrieval permission" in result["separation_of_duties"]["critic"]
-    assert result["cost_report"]["tool_calls"] == 5
+    assert result["cost_report"]["tool_calls"] == 6
+    assert result["question"] == nutrition_benchmark.QUESTIONS[0]["question"]
+    researcher_ids = {item["chunk_id"] for item in result["researcher"]["evidence_packet"]}
+    assert set(result["writer"]["evidence_ids_used"]) == researcher_ids
+    assert result["writer"]["draft"]
+    assert set(result["critic"]["checks"]) == {"citation_support", "required_structure", "safety_boundary", "urgent_escalation"}
+    assert result["revision"]["final_citation_check"]["status"] == "ok"
+    assert result["final_answer_hash"]
+
+
+def test_d2_multi_agent_outputs_change_with_the_selected_question() -> None:
+    from d2_agent import run_multi_agent
+
+    normal = run_multi_agent("nutrition", "NUT-01", "good")
+    boundary = run_multi_agent("nutrition", "NUT-08", "good")
+    assert normal["question"] != boundary["question"]
+    assert normal["researcher"]["evidence_packet"] != boundary["researcher"]["evidence_packet"]
+    assert normal["writer"]["draft"] != boundary["writer"]["draft"]
+    assert normal["researcher"]["gate"]["action"] == "answer"
+    assert boundary["researcher"]["gate"]["action"] == "abstain"
+    assert normal["final_answer_hash"] != boundary["final_answer_hash"]
 
 
 def test_d2_golden_set_records_four_layers_and_retains_failures() -> None:

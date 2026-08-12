@@ -14,7 +14,7 @@ let displayedOutputs = {X:'baseline',Y:'rag'};
 function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
 function percent(value){return `${Math.round(Number(value||0)*100)}%`;}
 async function responseJson(response){const text=await response.text();try{return text?JSON.parse(text):{};}catch{return {detail:{code:`HTTP_${response.status}`,message:text.slice(0,240)||'服务返回了非 JSON 错误'}};}}
-function errorMessage(data,fallback='运行失败'){const detail=data?.detail;return typeof detail==='string'?detail:(detail?.message||fallback);}
+function errorMessage(data,fallback='运行失败'){const detail=data?.detail;if(Array.isArray(detail))return detail.map(item=>item.msg||JSON.stringify(item)).join('；');return typeof detail==='string'?detail:(detail?.message||fallback);}
 function renderMarkdown(value){return escapeHtml(value).replace(/^## (.+)$/gm,'<h4>$1</h4>').replace(/^- (.+)$/gm,'<p class="bullet">$1</p>').replace(/\[([A-Z][A-Z0-9_-]*)]/g,'<mark>[$1]</mark>').replace(/\n{2,}/g,'</p><p>').replace(/^/,'<p>').replace(/$/,'</p>');}
 function metricRows(metrics){return rubricKeys.map(key=>`<div class="mini-metric"><span>${metricLabels[key]}</span><b>${percent(metrics[key])}</b></div>`).join('');}
 
@@ -38,6 +38,7 @@ async function loadOverview(){
 }
 
 async function loadQuestions(){
+  $('#run-agent').disabled=true;$('#run-multi-agent').disabled=true;$('#agent-status').textContent='正在加载题目…';
   const selected=$('#question-select').value;
   const endpoint=currentView==='design'?'/api/design/questions':'/api/questions';
   const questions=await fetch(`${endpoint}?domain=${currentDomain}`).then(r=>r.json());
@@ -48,6 +49,7 @@ async function loadQuestions(){
     return `<option value="${item.id}">${item.id} · ${escapeHtml(item.question)}${tag}</option>`;
   }).join('');
   if(selected&&[...$('#question-select').options].some(option=>option.value===selected))$('#question-select').value=selected;
+  const ready=$('#question-select').options.length>0;$('#run-agent').disabled=!ready;$('#run-multi-agent').disabled=!ready;$('#agent-status').textContent=ready?'使用当前题目与检索条件':'没有可运行的题目';
 }
 
 function renderOutputs(data){
@@ -123,15 +125,36 @@ async function saveReview(event){
 }
 
 function agentPayload(){return {domain:currentDomain,question_id:$('#question-select').value,retrieval_condition:$('#condition-select').value};}
+function traceBody(row){
+  const observation=row.observation||{};
+  if(row.tool==='search_evidence')return `<div class="trace-details"><div><b>门控动作</b><span>${escapeHtml(observation.gate?.action||'unknown')}</span></div><div><b>目标证据</b><span>${escapeHtml(observation.gate?.expected_evidence_type||'相关登记证据')}</span></div></div><div class="trace-evidence">${(observation.evidence||[]).map(item=>`<section><b>[${escapeHtml(item.chunk_id)}] ${escapeHtml(item.title)}</b><span>${escapeHtml(item.organization)} · ${item.year} · ${escapeHtml(item.quality)}</span></section>`).join('')||'<span>没有检索到登记证据</span>'}</div>`;
+  if(row.tool==='assess_evidence_grade')return `<div class="trace-details"><div><b>最高等级</b><span>Grade ${observation.strongest_grade||0}</span></div><div><b>可回答性</b><span>${observation.adequate?'证据可支持一般回答':'需受控拒答或说明局限'}</span></div></div><div class="trace-grades">${(observation.items||[]).map(item=>`<span>[${escapeHtml(item.chunk_id)}] ${escapeHtml(item.quality)} · Grade ${item.grade}</span>`).join('')}</div>`;
+  return `<div class="trace-details"><div><b>核验状态</b><span>${escapeHtml(observation.status)}</span></div><div><b>引用精度</b><span>${percent(observation.citation_precision)}</span></div><div><b>已核验引用</b><span>${(observation.cited_chunk_ids||[]).map(id=>`[${escapeHtml(id)}]`).join('、')||'无引用'}</span></div></div><p class="trace-preview">${escapeHtml(observation.answer_preview||'')}</p>`;
+}
 function renderTrace(result){
   $('#agent-result').hidden=false;
-  $('#agent-result').innerHTML=`<div class="agent-summary"><b>动作：${escapeHtml(result.action)}</b><span>${result.trace.length}/${result.step_limit} 步</span><span>${escapeHtml(result.skill.skill)}</span><span>引用核验：${escapeHtml(result.citation_check.status)}</span></div><div class="trace-grid">${result.trace.map(row=>`<article class="trace-step"><header><b>STEP ${row.step}</b><code>${escapeHtml(row.tool)}</code></header><p><b>Observation</b> ${escapeHtml(JSON.stringify(row.observation))}</p><p><b>Decision</b> ${escapeHtml(row.decision)}</p></article>`).join('')}</div>`;
+  $('#agent-result').innerHTML=`<div class="agent-summary"><b>动作：${escapeHtml(result.action)}</b><span>${escapeHtml(result.question_id)} · ${escapeHtml(result.condition)}</span><span>${result.trace.length}/${result.step_limit} 步</span><span>${escapeHtml(result.skill.skill)}</span><span>引用核验：${escapeHtml(result.citation_check.status)}</span></div><div class="chain-question"><b>当前问题</b><span>${escapeHtml(result.question)}</span></div><div class="trace-grid">${result.trace.map(row=>`<article class="trace-step"><header><b>STEP ${row.step}</b><code>${escapeHtml(row.tool)}</code></header>${traceBody(row)}<p class="trace-decision"><b>本步决策</b><span>${escapeHtml(row.decision)}</span></p></article>`).join('')}</div><article class="agent-final"><header><b>当前问题的最终回答</b><span>${escapeHtml(result.action)}</span></header><div class="chain-answer">${renderMarkdown(result.answer)}</div></article>`;
+}
+function checkLabel(value){return value?'<span class="check-pass">通过</span>':'<span class="check-fail">未通过</span>';}
+function renderMultiAgent(data){
+  const evidence=data.researcher.evidence_packet||[],issues=data.critic.issues||[],changes=data.revision.changes||[];
+  $('#agent-result').hidden=false;
+  $('#agent-result').innerHTML=`
+    <div class="agent-summary"><b>${escapeHtml(data.workflow)}</b><span>${escapeHtml(data.question_id)} · ${escapeHtml(data.condition)}</span><span>Tool ${data.cost_report.tool_calls} 次</span><span>模型 ${data.cost_report.model_calls} 次（离线规则链）</span><span>Critic：${escapeHtml(data.critic.verdict)}</span></div>
+    <div class="chain-question"><b>当前问题</b><span>${escapeHtml(data.question)}</span></div>
+    <div class="chain-flow">
+      <article class="chain-stage researcher-stage"><header><span>01</span><div><b>RESEARCHER</b><small>检索、分级、识别证据缺口</small></div></header><dl><div><dt>目标证据</dt><dd>${escapeHtml(data.researcher.search_plan.target_evidence_type||'相关登记证据')}</dd></div><div><dt>门控动作</dt><dd>${escapeHtml(data.researcher.gate.action||'unknown')}</dd></div><div><dt>交接约束</dt><dd>${escapeHtml(data.researcher.handoff)}</dd></div></dl><div class="chain-evidence">${evidence.length?evidence.map(item=>`<section><b>[${escapeHtml(item.chunk_id)}] ${escapeHtml(item.title)}</b><span>${escapeHtml(item.organization)} · ${item.year} · ${escapeHtml(item.quality)} · Grade ${item.grade} · ${escapeHtml(item.role)}</span><p>${escapeHtml(item.summary)}</p></section>`).join(''):'<p class="chain-empty">没有检索到证据，Writer 必须拒绝确定性回答。</p>'}</div>${data.researcher.gaps.length?`<div class="chain-note"><b>证据缺口</b>${data.researcher.gaps.map(item=>`<span>${escapeHtml(item)}</span>`).join('')}</div>`:''}</article>
+      <article class="chain-stage writer-stage"><header><span>02</span><div><b>WRITER</b><small>只使用 Researcher 证据包组织草稿</small></div></header><div class="chain-meta"><span>使用证据 ${data.writer.evidence_ids_used.length} 条</span><span>章节 ${data.writer.sections.map(escapeHtml).join(' / ')}</span></div><div class="chain-answer">${renderMarkdown(data.writer.draft)}</div></article>
+      <article class="chain-stage critic-stage"><header><span>03</span><div><b>CRITIC</b><small>核验引用、结构与医疗安全边界</small></div></header><div class="critic-checks">${Object.entries(data.critic.checks).map(([key,value])=>`<div><span>${escapeHtml({citation_support:'引用支持',required_structure:'必要结构',safety_boundary:'安全边界',urgent_escalation:'急症升级'}[key]||key)}</span>${checkLabel(value)}</div>`).join('')}</div><div class="chain-note"><b>${issues.length?'发现问题':'审查结论'}</b>${(issues.length?issues.map(item=>item.message):data.critic.recommendations).map(item=>`<span>${escapeHtml(item)}</span>`).join('')}</div></article>
+      <article class="chain-stage final-stage"><header><span>04</span><div><b>REVISION & FINAL</b><small>依据 Critic 意见修订并重新核验</small></div></header><div class="chain-meta"><span>${data.revision.performed?'已执行修订':'无需修订'}</span><span>${changes.length?changes.map(escapeHtml).join('、'):'草稿直接进入终稿'}</span><span>最终引用：${escapeHtml(data.revision.final_citation_check.status)}</span></div><div class="chain-answer final-answer">${renderMarkdown(data.final_answer)}</div></article>
+    </div>`;
 }
 async function runAgentPanel(multi=false){
+  if(!$('#question-select').value){$('#agent-status').textContent='题目尚未加载完成';return;}
   const button=$(multi?'#run-multi-agent':'#run-agent'),status=$('#agent-status');button.disabled=true;status.textContent=multi?'正在运行角色链…':'正在运行最多三步的 Agent…';
   try{const response=await fetch(multi?'/api/multi-agent/run':'/api/agent/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(agentPayload())});const data=await responseJson(response);if(!response.ok)throw new Error(errorMessage(data));
     if(!multi){renderTrace(data);status.textContent=`${data.action} · ${data.trace.length} 步 · ${data.citation_check.status}`;}
-    else{$('#agent-result').hidden=false;$('#agent-result').innerHTML=`<div class="agent-summary"><b>${escapeHtml(data.workflow)}</b><span>Tool ${data.cost_report.tool_calls} 次</span><span>模型 ${data.cost_report.model_calls} 次</span><span>Critic：${escapeHtml(data.critic.verdict)}</span></div><div class="role-grid">${data.roles.map(role=>`<article class="role-item"><b>${escapeHtml(role.toUpperCase())}</b><span>${escapeHtml(data.separation_of_duties[role])}</span></article>`).join('')}</div>`;status.textContent=`完整样例链：${data.complete_sample_chain.join(' → ')}`;}
+    else{renderMultiAgent(data);status.textContent=`${data.question_id} · ${data.complete_sample_chain.join(' → ')}`;}
   }catch(error){status.textContent=`运行失败：${error.message}`;}finally{button.disabled=false;}
 }
 

@@ -12,6 +12,7 @@ def build_compliance_report() -> dict[str, object]:
     import benchmark_engine
     import hypertension_benchmark
     import nutrition_benchmark
+    from advanced_evaluation import evaluate_advanced_features
 
     corpus_path = ROOT / "data" / "pubmed_corpus.json"
     payload = json.loads(corpus_path.read_text(encoding="utf-8")) if corpus_path.exists() else {"documents": []}
@@ -25,6 +26,7 @@ def build_compliance_report() -> dict[str, object]:
     sample_evidence, sample_diagnostics = nutrition_benchmark.retrieve(sample_case, "good")
     sample_map = benchmark_engine.build_evidence_map(sample_evidence)
     sample_map_validation = benchmark_engine.verify_evidence_map(sample_map)
+    advanced_evaluation = evaluate_advanced_features()
     checks = {
         "catalog_has_at_least_500_documents": len(documents) >= 500,
         "catalog_metadata_is_complete": not any(missing_by_field.values()),
@@ -55,6 +57,15 @@ def build_compliance_report() -> dict[str, object]:
         "evidence_map_resolves_chunks_to_registered_urls": bool(sample_map) and bool(sample_map_validation["valid"]),
         "six_dimension_rubric_is_frozen": len(benchmark_engine.RUBRIC) == 6,
         "llm_judge_pipeline_is_available": callable(benchmark_engine.judge_answer),
+        "metadata_filter_query_rewrite_and_multi_round_retrieval_pass": all(
+            advanced_evaluation["checks"][key]
+            for key in ("metadata_filter_executed_for_all_questions", "query_rewrite_executed_for_all_questions", "multi_round_retrieval_executed")
+        ),
+        "wiki_ingest_query_update_and_lint_pass": all(
+            advanced_evaluation["checks"][key]
+            for key in ("wiki_create_deduplicate_update_history", "wiki_query_returns_topic", "wiki_lint_has_no_errors")
+        ),
+        "advanced_automated_evaluation_passes": advanced_evaluation["status"] == "pass",
     }
     return {
         "status": "pass" if all(checks.values()) else "fail",
@@ -64,11 +75,12 @@ def build_compliance_report() -> dict[str, object]:
             "missing_by_field": missing_by_field,
         },
         "advanced_path": {
-            "implemented": "hybrid_rag",
-            "completed_components": ["passage_chunking", "lexical_retrieval", "vector_retrieval", "rrf_fusion", "reranking", "mmr", "complementary_evidence", "evidence_map"],
-            "not_implemented": ["llm_wiki", "query_rewriting", "multi_round_retrieval"],
+            "implemented": "all_advanced_and_challenge_items",
+            "completed_components": ["passage_chunking", "lexical_retrieval", "vector_retrieval", "metadata_filtering", "query_rewriting", "rrf_fusion", "reranking", "mmr", "complementary_evidence", "multi_round_retrieval", "evidence_map", "llm_wiki_ingest_query_update_lint", "automated_evaluation"],
+            "not_implemented": [],
             "interpretation": "Advanced capabilities are composable priorities, not mutually exclusive routes.",
         },
+        "advanced_evaluation": {"status": advanced_evaluation["status"], "checks": advanced_evaluation["checks"]},
         "external_acceptance_items": [
             "Run the frozen benchmark with a real model and preregistered repeats.",
             "Collect independent blind scores from at least two qualified reviewers.",

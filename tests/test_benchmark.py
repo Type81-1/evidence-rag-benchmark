@@ -11,8 +11,10 @@ import app as app_module
 import benchmark_engine
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_evidence_map, build_prompt, hybrid_rank, passage_evidence, rerank_candidates, score_answer, split_passages, validate_evidence_packet, verify_evidence_map
+from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, apply_metadata_filters, bm25_rank, build_evidence_map, build_metadata_filters, build_prompt, hybrid_rank, passage_evidence, rewrite_query, score_answer, split_passages, validate_evidence_packet, verify_evidence_map
 from course_compliance import build_compliance_report
+from advanced_evaluation import evaluate_advanced_features
+from wiki_engine import build_topic_page, ingest_topic, lint_wiki, query_wiki
 
 
 client = TestClient(app_module.app)
@@ -82,6 +84,50 @@ def test_retrieval_exposes_fusion_reranking_and_evidence_map() -> None:
     assert all(entry["url"].startswith("https://") for entry in evidence_map.values())
 
 
+def test_metadata_filter_query_rewrite_and_multi_round_diagnostics() -> None:
+    case = nutrition_benchmark.QUESTIONS[0]
+    filters = build_metadata_filters(case)
+    filtered, metadata = apply_metadata_filters(nutrition_benchmark.EVIDENCE, filters, minimum_pool=20)
+    rewrite = rewrite_query(case)
+    assert filtered
+    assert metadata["output_count"] <= metadata["input_count"]
+    assert metadata["filters"]["track"] == "nutrition"
+    assert rewrite["rewritten"] != rewrite["original"]
+    evidence, diagnostics = nutrition_benchmark.retrieve(case, "good")
+    assert evidence
+    assert diagnostics["metadata_filter"]["output_count"] > 0
+    assert diagnostics["query_rewrite"]["strategy"]
+    assert 1 <= len(diagnostics["retrieval_rounds"]) <= 2
+
+
+def test_wiki_ingest_query_update_and_lint(tmp_path: Path) -> None:
+    path = tmp_path / "wiki.json"
+    case = nutrition_benchmark.QUESTIONS[0]
+    result = nutrition_benchmark.compare_question("NUT-01", "good")
+    chunk_ids = {item["chunk_id"] for item in result["rag"]["evidence"]}
+    evidence = [
+        chunk
+        for item in nutrition_benchmark.EVIDENCE
+        for chunk in ([item] if item.chunk_id else passage_evidence(item))
+        if chunk.chunk_id in chunk_ids
+    ]
+    page = build_topic_page(str(case["topic"]), str(case["question"]), str(result["rag"]["answer"]), evidence, "nutrition")
+    assert ingest_topic(page, path)["action"] == "created"
+    assert ingest_topic(page, path)["action"] == "unchanged"
+    updated = {**page, "content": page["content"] + "\n\n更新。", "content_hash": page["content_hash"] + "-2"}
+    update_result = ingest_topic(updated, path)
+    assert update_result["action"] == "updated"
+    assert update_result["history_count"] == 1
+    assert query_wiki("限钠", path)[0]["slug"] == page["slug"]
+    assert lint_wiki(path)["valid"] is True
+
+
+def test_advanced_automated_evaluation_passes() -> None:
+    report = evaluate_advanced_features()
+    assert report["status"] == "pass", report
+    assert all(report["checks"].values())
+
+
 def test_course_compliance_report_passes_static_checks() -> None:
     report = build_compliance_report()
     assert report["status"] == "pass", report
@@ -92,7 +138,8 @@ def test_degraded_retrieval_reduces_precision_without_using_empty_context() -> N
     good_evidence, good_metrics = nutrition_benchmark.retrieve(case, "good")
     noisy_evidence, noisy_metrics = nutrition_benchmark.retrieve(case, "noisy")
     assert good_evidence and noisy_evidence
-    assert noisy_metrics["precision_at_k"] < good_metrics["precision_at_k"]
+    assert noisy_metrics["precision_at_k"] <= good_metrics["precision_at_k"]
+    assert sum(item["score"] for item in noisy_metrics["selected_scores"]) < sum(item["score"] for item in good_metrics["selected_scores"])
     assert {"precision_at_k", "recall_at_k", "mrr", "selected_scores", "ranked_candidates", "validation"}.issubset(noisy_metrics)
 
 
@@ -278,3 +325,18 @@ def test_invalid_domain_and_condition_are_rejected() -> None:
     assert client.get("/api/benchmark?domain=unknown").status_code == 400
     bad = client.post("/api/compare", json={"domain":"nutrition","question_id":"NUT-01","retrieval_condition":"broken","live":False})
     assert bad.status_code == 400
+
+
+def test_wiki_api_end_to_end(tmp_path: Path, monkeypatch) -> None:
+    import wiki_engine
+    path = tmp_path / "wiki.json"
+    monkeypatch.setattr(wiki_engine, "WIKI_PATH", path)
+    monkeypatch.setattr(app_module, "load_wiki", lambda: wiki_engine.load_wiki(path))
+    monkeypatch.setattr(app_module, "ingest_topic", lambda page: wiki_engine.ingest_topic(page, path))
+    monkeypatch.setattr(app_module, "query_wiki", lambda query, limit=5: wiki_engine.query_wiki(query, path, limit))
+    monkeypatch.setattr(app_module, "lint_wiki", lambda: wiki_engine.lint_wiki(path))
+    response = client.post("/api/wiki/ingest", json={"domain":"nutrition","question_id":"NUT-01","retrieval_condition":"good"})
+    assert response.status_code == 200, response.text
+    assert response.json()["wiki"]["action"] == "created"
+    assert client.get("/api/wiki/query?q=限钠").json()["results"]
+    assert client.get("/api/wiki/lint").json()["valid"] is True

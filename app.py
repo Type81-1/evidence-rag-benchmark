@@ -15,6 +15,7 @@ import hypertension_benchmark
 import nutrition_benchmark
 from benchmark_engine import LLM_JUDGE_VERSION, PROMPT_VERSION, RETRIEVAL_VERSION, RUBRIC, RUBRIC_VERSION, RUNS_DIR, judge_answer, proxy_status, test_model_connection
 from course_compliance import build_compliance_report
+from wiki_engine import WIKI_VERSION, build_topic_page, ingest_topic, lint_wiki, load_wiki, query_wiki
 
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -68,6 +69,19 @@ class JudgeRequest(BaseModel):
     evidence_ids: list[str] = Field(default_factory=list, max_length=10)
 
 
+class WikiIngestRequest(BaseModel):
+    domain: str = Field(default="nutrition")
+    question_id: str = Field(min_length=2, max_length=50)
+    retrieval_condition: str = Field(default="good", pattern="^(good|noisy|missing)$")
+
+
+class AdvancedCompareRequest(BaseModel):
+    domain: str = Field(default="nutrition")
+    question_id: str = Field(min_length=2, max_length=50)
+    retrieval_condition: str = Field(default="good", pattern="^(good|noisy|missing)$")
+    update_wiki: bool = True
+
+
 def _benchmark_module(domain: str):
     if domain == "nutrition":
         return nutrition_benchmark
@@ -116,6 +130,7 @@ def project_status() -> dict[str, object]:
         "retrieval_version": RETRIEVAL_VERSION,
         "rubric_version": RUBRIC_VERSION,
         "llm_judge_version": LLM_JUDGE_VERSION,
+        "wiki_version": WIKI_VERSION,
         "ethics": {"no_phi": True, "ai_disclosure": True, "emergency_escalation": True},
     }
 
@@ -239,6 +254,50 @@ def compare(payload: CompareRequest) -> dict[str, object]:
         raise HTTPException(status_code=404, detail="未找到该测试问题") from exc
     except Exception as exc:
         raise _model_error(exc) from exc
+
+
+@app.post("/api/advanced-compare")
+def advanced_compare(payload: AdvancedCompareRequest) -> dict[str, object]:
+    module = _benchmark_module(payload.domain)
+    try:
+        result = module.compare_question(payload.question_id, payload.retrieval_condition, live=False)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="未找到该测试问题") from exc
+    wiki = None
+    if payload.update_wiki and result["rag"]["evidence"]:
+        evidence_registry = {item.id: item for item in module.EVIDENCE}
+        evidence = [evidence_registry[item["chunk_id"]] for item in result["rag"]["evidence"] if item["chunk_id"] in evidence_registry]
+        if not evidence:
+            from benchmark_engine import Evidence
+            evidence = [Evidence(**{key: item[key] for key in Evidence.__dataclass_fields__}) for item in result["rag"]["evidence"]]
+        case = result["question"]
+        page = build_topic_page(str(case["topic"]), str(case["question"]), str(result["rag"]["answer"]), evidence, payload.domain)
+        wiki = ingest_topic(page)
+    result["domain"] = payload.domain
+    result["wiki"] = wiki
+    return result
+
+
+@app.post("/api/wiki/ingest")
+def wiki_ingest(payload: WikiIngestRequest) -> dict[str, object]:
+    result = advanced_compare(AdvancedCompareRequest(**payload.model_dump(), update_wiki=True))
+    return {"wiki": result["wiki"], "question_id": payload.question_id}
+
+
+@app.get("/api/wiki/pages")
+def wiki_pages() -> dict[str, object]:
+    store = load_wiki()
+    return {"version": store["version"], "pages": list(store["pages"].values()), "history_count": len(store["history"])}
+
+
+@app.get("/api/wiki/query")
+def wiki_query(q: str, limit: int = 5) -> dict[str, object]:
+    return {"query": q, "results": query_wiki(q, limit=max(1, min(limit, 20)))}
+
+
+@app.get("/api/wiki/lint")
+def wiki_lint() -> dict[str, object]:
+    return lint_wiki()
 
 
 @app.get("/api/runs")

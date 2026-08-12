@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 
 PROMPT_VERSION = "evidence-gate-v2"
 RUBRIC_VERSION = "six-dimension-v1"
-RETRIEVAL_VERSION = "passage-bm25-tfidf-rrf-rerank-mmr-v4"
+RETRIEVAL_VERSION = "rewrite-filter-multiround-passage-bm25-tfidf-rrf-rerank-mmr-v5"
 LLM_JUDGE_VERSION = "evidence-blind-judge-v1"
 ROOT = Path(__file__).resolve().parent
 RUNS_DIR = ROOT / "data" / "runs"
@@ -183,6 +183,22 @@ def hybrid_rank(question: str, corpus: list[Evidence], rrf_k: int = 60) -> list[
     )
 
 
+def multi_query_hybrid_rank(queries: list[str], corpus: list[Evidence], rrf_k: int = 60) -> list[tuple[float, Evidence]]:
+    """Fuse lexical and vector rankings for original and rewritten queries."""
+    scores: dict[str, float] = Counter()
+    registry = {item.id: item for item in corpus}
+    for query_index, query in enumerate(dict.fromkeys(queries)):
+        query_weight = 1.0 if query_index == 0 else 0.75
+        for ranking in (bm25_rank(query, corpus), tfidf_rank(query, corpus)):
+            for rank, (_, item) in enumerate(ranking, start=1):
+                scores[item.id] += query_weight / (rrf_k + rank)
+    return sorted(
+        ((round(score, 8), registry[item_id]) for item_id, score in scores.items()),
+        key=lambda row: (row[0], row[1].year),
+        reverse=True,
+    )
+
+
 def rerank_candidates(question: str, candidates: list[tuple[float, Evidence]]) -> list[tuple[float, Evidence]]:
     """Independently rerank a 20-50 item fused pool using exact coverage and proximity."""
     query_tokens = set(_tokenize(question))
@@ -312,6 +328,81 @@ def _type_terms(expected: str) -> tuple[str, ...]:
     return tuple(term for key, terms in aliases.items() if key in expected for term in terms)
 
 
+def build_metadata_filters(case: dict[str, object]) -> dict[str, object]:
+    """Build broad, auditable filters without consulting gold evidence IDs."""
+    track = str(case.get("track") or "")
+    question = str(case.get("question") or "")
+    expected_type = str(case.get("expected_evidence_type") or "")
+    current_year = datetime.now(timezone.utc).year
+    filters: dict[str, object] = {
+        "track": track,
+        "quality_terms": list(_type_terms(expected_type)),
+        "min_year": current_year - 15,
+        "source_types": ["curated", "PubMed"],
+    }
+    if any(term in question for term in ("指南", "应该", "能否", "可以")):
+        filters["preferred_roles"] = ["overview", "causal"]
+    return filters
+
+
+def apply_metadata_filters(corpus: list[Evidence], filters: dict[str, object], minimum_pool: int = 60) -> tuple[list[Evidence], dict[str, object]]:
+    quality_terms = tuple(str(term).lower() for term in filters.get("quality_terms", []))
+    min_year = int(filters.get("min_year", 0))
+
+    def matches(item: Evidence, *, require_quality: bool) -> bool:
+        year_ok = not item.year or item.year >= min_year
+        quality_ok = not quality_terms or any(term in item.quality.lower() for term in quality_terms)
+        return year_ok and (quality_ok if require_quality else True)
+
+    strict = [item for item in corpus if matches(item, require_quality=True)]
+    relaxed = False
+    filtered = strict
+    if len(filtered) < minimum_pool:
+        relaxed = True
+        recent = [item for item in corpus if matches(item, require_quality=False)]
+        registry = {item.id: item for item in strict}
+        for item in recent:
+            registry.setdefault(item.id, item)
+            if len(registry) >= minimum_pool:
+                break
+        filtered = list(registry.values())
+    if not filtered:
+        filtered = corpus
+        relaxed = True
+    return filtered, {
+        "filters": filters,
+        "input_count": len(corpus),
+        "strict_match_count": len(strict),
+        "output_count": len(filtered),
+        "relaxed_for_minimum_pool": relaxed,
+    }
+
+
+def rewrite_query(case: dict[str, object]) -> dict[str, object]:
+    question = re.sub(r"\s+", " ", str(case["question"])).strip()
+    expected_type = str(case.get("expected_evidence_type") or "")
+    track = str(case.get("track") or "")
+    domain_terms = "饮食 营养 cardiovascular diet" if track == "nutrition" else "高血压 blood pressure hypertension"
+    evidence_terms = " ".join(_type_terms(expected_type)) or expected_type
+    rewritten = f"{question} {domain_terms} {evidence_terms}".strip()
+    return {
+        "original": question,
+        "rewritten": rewritten,
+        "added_terms": [term for term in (domain_terms, evidence_terms) if term],
+        "strategy": "domain-and-evidence-type-expansion-v1",
+    }
+
+
+def build_gap_query(case: dict[str, object], selected: list[Evidence]) -> str | None:
+    expected_terms = set(_type_terms(str(case.get("expected_evidence_type") or "")))
+    matched = {term for item in selected for term in expected_terms if term.lower() in item.quality.lower()}
+    missing = sorted(expected_terms - matched)
+    if not missing and len({evidence_role(item) for item in selected}) >= 2:
+        return None
+    gap_terms = " ".join(missing or ["系统综述", "随机对照试验", "指南"])
+    return f"{case['question']} {gap_terms} 适用人群 局限 安全"
+
+
 def validate_evidence_packet(case: dict[str, object], evidence: list[Evidence], diagnostics: dict[str, object]) -> dict[str, object]:
     question = str(case["question"])
     expected_type = str(case["expected_evidence_type"])
@@ -352,12 +443,27 @@ def validate_evidence_packet(case: dict[str, object], evidence: list[Evidence], 
 
 def retrieve(case: dict[str, object], corpus: list[Evidence], condition: str, limit: int = 3) -> tuple[list[Evidence], dict[str, object]]:
     passages = [passage for item in corpus for passage in (passage_evidence(item) if not item.chunk_id else [item])]
-    question = str(case["question"])
-    lexical = bm25_rank(question, passages)
-    vector = tfidf_rank(question, passages)
-    fused = hybrid_rank(question, passages)
+    metadata_filters = build_metadata_filters(case)
+    filtered_passages, filter_diagnostics = apply_metadata_filters(passages, metadata_filters)
+    query_rewrite = rewrite_query(case)
+    original_question = str(query_rewrite["original"])
+    question = str(query_rewrite["rewritten"])
+    lexical = bm25_rank(original_question, filtered_passages)
+    vector = tfidf_rank(original_question, filtered_passages)
+    fused = multi_query_hybrid_rank([original_question, question], filtered_passages)
     candidate_pool = fused[:30]
-    ranked = rerank_candidates(question, candidate_pool)
+    ranked = rerank_candidates(original_question, candidate_pool)
+    first_round = [item for _, item in complementary_select(ranked, limit)]
+    gap_query = build_gap_query(case, first_round)
+    round_two_candidates: list[tuple[float, Evidence]] = []
+    if gap_query:
+        round_two_candidates = multi_query_hybrid_rank([original_question, gap_query], filtered_passages)[:20]
+        combined: dict[str, tuple[float, Evidence]] = {item.id: (score, item) for score, item in candidate_pool}
+        for score, item in round_two_candidates:
+            previous = combined.get(item.id)
+            combined[item.id] = (max(score, previous[0]) if previous else score, item)
+        candidate_pool = sorted(combined.values(), key=lambda row: (row[0], row[1].year), reverse=True)[:50]
+        ranked = rerank_candidates(original_question, candidate_pool)
     if condition == "missing":
         selected: list[Evidence] = []
     elif condition == "noisy":
@@ -383,6 +489,12 @@ def retrieve(case: dict[str, object], corpus: list[Evidence], condition: str, li
         "mrr": round(1 / first_rank, 3) if first_rank else 0.0,
         "top_score_ratio": round((selected_scores[0] / top_score), 3) if selected_scores and top_score else 0.0,
         "candidate_pool_size": len(candidate_pool),
+        "metadata_filter": filter_diagnostics,
+        "query_rewrite": query_rewrite,
+        "retrieval_rounds": [
+            {"round": 1, "query": question, "candidate_count": min(30, len(fused))},
+            *([{"round": 2, "query": gap_query, "candidate_count": len(round_two_candidates), "reason": "evidence-gap"}] if gap_query else []),
+        ],
         "lexical_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(lexical[:30], 1)],
         "vector_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(vector[:30], 1)],
         "fused_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(candidate_pool, 1)],

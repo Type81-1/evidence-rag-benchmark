@@ -96,7 +96,7 @@ Windows 下后端会自动读取当前系统代理，并在代理端口可用时
 
 ## 进阶任务范围
 
-课件把能力分为基础必做、进阶建议和挑战选做，强调先完成最小闭环；这些能力不是互斥路线，可以按资源与目标组合。本项目已实现 passage 分块、词法/向量双路召回、RRF、独立重排、MMR、互补证据、evidence map 和自动化评测框架。尚未实现 LLM Wiki ingest/query/lint 更新闭环、查询改写和多轮检索，仓库不把这些未实现能力计入完成声明。
+课件把能力分为基础必做、进阶建议和挑战选做，强调先完成最小闭环；这些能力不是互斥路线。本项目现已实现全部列出能力：passage 分块、词法/向量双路召回、真实 metadata 过滤、查询改写、RRF、独立重排、MMR、互补证据、多轮检索、evidence map、Wiki ingest/query/update/lint，以及自动化评测。每项均由 `advanced_evaluation.py` 执行行为验收，而不是只检查接口是否存在。
 
 ## 启动与测试
 
@@ -105,6 +105,7 @@ python -m pip install -r requirements.txt
 python scripts/enrich_pubmed_metadata.py
 python scripts/export_question_set.py
 python course_compliance.py
+python advanced_evaluation.py
 python -m pytest -q
 python -m uvicorn app:app --host 127.0.0.1 --port 8001
 ```
@@ -124,15 +125,21 @@ python evaluation.py --domain hypertension --output data/hypertension_evaluation
 - `GET /api/design/questions?domain=nutrition`：供实验设计者使用，包含拒答和证据类型标签。
 - `GET /api/benchmark?domain=nutrition`：离线管线自检。
 - `POST /api/compare`：单题 A/B 对照。
+- `POST /api/advanced-compare`：执行改写、metadata 过滤、多轮检索，并可更新 Wiki。
 - `POST /api/run-benchmark`：真实模型批量实验。
 - `POST /api/model-config`：把 Key、模型和推理强度写入当前服务内存。
 - `POST /api/model-connection-test`：发送最小请求并返回结构化连接诊断。
 - `GET /api/course-compliance`：逐项返回课件静态要求的机器可读检查结果。
+- `POST /api/wiki/ingest`：从登记题目与检索证据生成或更新主题页。
+- `GET /api/wiki/query?q=...`：查询主题页及其 evidence map。
+- `GET /api/wiki/lint`：检查缺失/未知引用、非法 URL、过期页和孤立页。
 - `POST /api/llm-judge`：对登记题目、证据和回答执行可选的盲法模型评审。
 - `GET /api/rubric`：六项 Rubric 定义。
 - `POST /api/reviews`：保存盲评。
 - `GET /api/review-summary`：按回答哈希汇总均分、评审人数和平均绝对分歧。
 - `GET /api/runs`：真实运行档案。
+
+`data/wiki_store.json` 是本地运行态知识库，默认不进入 Git。`data/advanced_evaluation_report.json` 是全进阶能力的可重复验收报告。
 
 ## 分工建议
 

@@ -27,19 +27,32 @@ def build_compliance_report() -> dict[str, object]:
     sample_map = benchmark_engine.build_evidence_map(sample_evidence)
     sample_map_validation = benchmark_engine.verify_evidence_map(sample_map)
     advanced_evaluation = evaluate_advanced_features()
+    offline_reports = []
+    for report_path in (ROOT / "data" / "evaluation_report.json", ROOT / "data" / "hypertension_evaluation_report.json"):
+        offline_reports.append(json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {})
     checks = {
         "catalog_has_at_least_500_documents": len(documents) >= 500,
         "catalog_metadata_is_complete": not any(missing_by_field.values()),
         "catalog_source_ids_are_unique": len(source_ids) == len(set(source_ids)) and all(source_ids),
         "catalog_is_in_nutrition_retrieval": len(nutrition_benchmark.CATALOG_EVIDENCE) >= 500,
         "catalog_is_in_hypertension_retrieval": len(hypertension_benchmark.CATALOG_EVIDENCE) >= 500,
-        "each_domain_has_at_least_8_frozen_questions": all(
-            len(questions) >= 8
+        "each_domain_has_at_least_15_frozen_questions": all(
+            len(questions) >= 15
             for questions in (nutrition_benchmark.QUESTIONS, hypertension_benchmark.QUESTIONS)
         ),
-        "question_sets_include_abstention": all(
-            any(bool(case["should_abstain"]) for case in questions)
+        "question_sets_cover_normal_abstention_and_urgent_cases": all(
+            sum(not bool(case["should_abstain"]) for case in questions) >= 8
+            and sum(bool(case["should_abstain"]) for case in questions) >= 3
             for questions in (nutrition_benchmark.QUESTIONS, hypertension_benchmark.QUESTIONS)
+        ) and any(bool(case.get("urgent")) for case in hypertension_benchmark.QUESTIONS),
+        "each_domain_report_has_15_questions_and_45_comparisons": all(
+            report.get("question_count") == 15 and report.get("comparison_count") == 45
+            for report in offline_reports
+        ),
+        "ab_reports_cover_four_arms_and_six_dimensions": all(
+            set(report.get("summary", {})) == {"baseline", "good", "noisy", "missing"}
+            and all(set(metrics) == set(benchmark_engine.RUBRIC) for metrics in report.get("summary", {}).values())
+            for report in offline_reports
         ),
         "passages_have_auditable_locations": all(
             item.chunk_id and item.source_id and item.char_end > item.char_start and item.token_count > 0
@@ -81,6 +94,10 @@ def build_compliance_report() -> dict[str, object]:
             "interpretation": "Advanced capabilities are composable priorities, not mutually exclusive routes.",
         },
         "advanced_evaluation": {"status": advanced_evaluation["status"], "checks": advanced_evaluation["checks"]},
+        "benchmark_reports": [
+            {"domain": report.get("domain"), "question_count": report.get("question_count"), "comparison_count": report.get("comparison_count"), "arms": list(report.get("summary", {}))}
+            for report in offline_reports
+        ],
         "external_acceptance_items": [
             "Run the frozen benchmark with a real model and preregistered repeats.",
             "Collect independent blind scores from at least two qualified reviewers.",

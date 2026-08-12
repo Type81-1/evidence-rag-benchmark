@@ -9,3 +9,6 @@ chroma_db/
 data/runs/
 data/manual_reviews.json
 data/wiki_store.json
+# Local development server logs
+server-*.stdout.log
+server-*.stderr.log

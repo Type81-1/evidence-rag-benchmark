@@ -23,9 +23,10 @@ REQUIRED_FIELDS = {"id", "question", "track", "expected_evidence_type", "notes",
 
 def test_question_sets_are_preregistered_and_include_abstention_and_adversarial_cases() -> None:
     for questions in (nutrition_benchmark.QUESTIONS, hypertension_benchmark.QUESTIONS):
-        assert len(questions) >= 8
+        assert len(questions) >= 15
         assert all(REQUIRED_FIELDS.issubset(case) for case in questions)
-        assert 1 <= sum(bool(case["should_abstain"]) for case in questions) <= 3
+        assert sum(bool(case["should_abstain"]) for case in questions) >= 3
+        assert sum(not bool(case["should_abstain"]) for case in questions) >= 8
         assert any("对抗" in str(case["notes"]) or "越界" in str(case["notes"]) or case.get("urgent") for case in questions)
 
 
@@ -33,7 +34,7 @@ def test_frozen_question_manifest_can_be_exported() -> None:
     subprocess.run([sys.executable, "scripts/export_question_set.py"], check=True)
     payload = json.loads(Path("data/test_questions.json").read_text(encoding="utf-8"))
     assert payload["status"] == "frozen-before-live-evaluation"
-    assert len(payload["questions"]) == 16
+    assert len(payload["questions"]) == 30
 
 
 def test_evidence_registry_has_traceable_identifiers_and_urls() -> None:
@@ -194,6 +195,14 @@ def test_six_dimension_rubric_and_sentence_level_citation_support() -> None:
     assert metrics["unsupported_citation_rate"] == 0
 
 
+def test_evidence_summary_saying_insufficient_does_not_make_answer_a_refusal() -> None:
+    case = nutrition_benchmark.QUESTIONS[0]
+    evidence = passage_evidence(nutrition_benchmark.CURATED_EVIDENCE[6])
+    answer = "## 结论\n\n该问题可以基于当前登记证据谨慎回答。\n\n## 依据\n\n该摘要提到某项预防证据不足 [S7-C000]。\n\n## 局限\n\n结论仅限该问题。\n\n## 安全提示\n\n不替代医生建议。"
+    metrics = score_answer(case, answer, evidence, evidence_required=True)
+    assert metrics["refusal_quality"] == 1.0
+
+
 def test_fake_citation_is_flagged() -> None:
     case = nutrition_benchmark.QUESTIONS[0]
     answer = "## 结论\n\n这是一个无来源结论 [X99]。\n\n## 依据\n\n未知。\n\n## 局限\n\n未知。\n\n## 安全提示\n\n不替代医生建议。"
@@ -212,12 +221,26 @@ def test_emergency_case_requires_escalation_for_safety() -> None:
     result = hypertension_benchmark.compare_question("HTN-07", "good")
     assert "立即就医" in result["rag"]["answer"]
     assert result["rag"]["metrics"]["safety"] == 1.0
+    assert result["rag"]["metrics"]["refusal_quality"] == 1.0
+    neurologic = hypertension_benchmark.compare_question("HTN-15", "good")
+    assert neurologic["rag"]["validation"]["action"] == "escalate"
+    assert "立即就医" in neurologic["rag"]["answer"]
+    assert neurologic["rag"]["metrics"]["refusal_quality"] == 1.0
+
+
+def test_new_abstention_cases_trigger_the_gate() -> None:
+    device = hypertension_benchmark.compare_question("HTN-13", "good")
+    menu = nutrition_benchmark.compare_question("NUT-15", "good")
+    insufficient = nutrition_benchmark.compare_question("NUT-13", "good")
+    assert device["rag"]["validation"]["action"] == "abstain"
+    assert menu["rag"]["validation"]["action"] == "abstain"
+    assert insufficient["rag"]["validation"]["action"] == "abstain"
 
 
 def test_benchmark_records_metadata_and_all_arms() -> None:
     report = nutrition_benchmark.run_benchmark()
-    assert report["question_count"] == 8
-    assert report["comparison_count"] == 24
+    assert report["question_count"] == 15
+    assert report["comparison_count"] == 45
     assert report["prompt_version"] == PROMPT_VERSION
     assert report["corpus_hash"]
     assert report["retrieval_version"]
@@ -248,7 +271,7 @@ def test_api_hides_gold_answers_and_exposes_rubric_and_metadata() -> None:
     assert any(item["urgent"] for item in client.get("/api/design/questions?domain=hypertension").json())
     assert client.get("/api/rubric").json()["dimensions"] == RUBRIC
     status = client.get("/api/project-status").json()
-    assert status["question_count"] == 16
+    assert status["question_count"] == 30
     assert status["catalog_document_count"] >= 500
     assert status["ethics"]["no_phi"] is True
     assert client.get("/api/course-compliance").json()["status"] == "pass"

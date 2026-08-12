@@ -42,7 +42,7 @@ flowchart LR
 
 ## 题集
 
-`data/test_questions.json` 是冻结清单，共 16 题，每个领域 8 题。字段至少包括：
+`data/test_questions.json` 是冻结清单，共 30 题，每个领域 15 题。每个领域使用同一题集和配置执行 A/B/C/D 条件，满足赛道三 A/B 至少 15 题要求。字段至少包括：
 
 ```text
 id, question, track, expected_evidence_type, notes, should_abstain

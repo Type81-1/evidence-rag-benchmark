@@ -20,7 +20,7 @@ from urllib.parse import urlparse
 
 PROMPT_VERSION = "evidence-gate-v2"
 RUBRIC_VERSION = "six-dimension-v1"
-RETRIEVAL_VERSION = "bm25-tfidf-rrf-mmr-v3"
+RETRIEVAL_VERSION = "passage-bm25-tfidf-rrf-rerank-mmr-v4"
 LLM_JUDGE_VERSION = "evidence-blind-judge-v1"
 ROOT = Path(__file__).resolve().parent
 RUNS_DIR = ROOT / "data" / "runs"
@@ -38,9 +38,17 @@ class Evidence:
     quality: str
     identifier: str
     keywords: tuple[str, ...]
+    source_id: str = ""
+    chunk_id: str = ""
+    chunk_index: int = 0
+    token_count: int = 0
+    char_start: int = 0
+    char_end: int = 0
 
     def to_dict(self) -> dict[str, object]:
         payload = asdict(self)
+        payload["source_id"] = self.source_id or self.id
+        payload["chunk_id"] = self.chunk_id or f"{self.id}-C000"
         payload["content_hash"] = hashlib.sha256(f"{self.title}|{self.summary}|{self.url}".encode("utf-8")).hexdigest()
         payload["identifier_type"] = self.identifier.split(":", 1)[0] if ":" in self.identifier else "registry"
         return payload
@@ -70,6 +78,52 @@ def _tokenize(text: str) -> list[str]:
 def _document_text(item: Evidence) -> str:
     weighted_keywords = item.keywords * 3
     return " ".join((item.title, item.title, item.summary, item.topic, *weighted_keywords))
+
+
+def split_passages(text: str, target_tokens: int = 400, overlap_tokens: int = 80) -> list[tuple[str, int, int, int]]:
+    """Create auditable 300-500-token passages where source length permits."""
+    words = list(re.finditer(r"\S+", text))
+    if not words:
+        return []
+    if len(words) <= 500:
+        return [(text.strip(), 0, len(text), len(words))]
+    passages: list[tuple[str, int, int, int]] = []
+    start_token = 0
+    while start_token < len(words):
+        end_token = min(start_token + target_tokens, len(words))
+        start_char = words[start_token].start()
+        end_char = words[end_token - 1].end()
+        passages.append((text[start_char:end_char].strip(), start_char, end_char, end_token - start_token))
+        if end_token == len(words):
+            break
+        start_token = max(start_token + 1, end_token - overlap_tokens)
+    return passages
+
+
+def passage_evidence(item: Evidence) -> list[Evidence]:
+    source_id = item.source_id or item.id
+    passages = split_passages(item.summary) or [(item.summary, 0, len(item.summary), len(item.summary.split()))]
+    return [
+        Evidence(
+            id=f"{source_id}-C{index:03d}",
+            topic=item.topic,
+            title=item.title,
+            organization=item.organization,
+            year=item.year,
+            summary=text,
+            url=item.url,
+            quality=item.quality,
+            identifier=item.identifier,
+            keywords=item.keywords,
+            source_id=source_id,
+            chunk_id=f"{source_id}-C{index:03d}",
+            chunk_index=index,
+            token_count=token_count,
+            char_start=start,
+            char_end=end,
+        )
+        for index, (text, start, end, token_count) in enumerate(passages)
+    ]
 
 
 def bm25_rank(question: str, corpus: list[Evidence]) -> list[tuple[float, Evidence]]:
@@ -129,6 +183,23 @@ def hybrid_rank(question: str, corpus: list[Evidence], rrf_k: int = 60) -> list[
     )
 
 
+def rerank_candidates(question: str, candidates: list[tuple[float, Evidence]]) -> list[tuple[float, Evidence]]:
+    """Independently rerank a 20-50 item fused pool using exact coverage and proximity."""
+    query_tokens = set(_tokenize(question))
+    reranked: list[tuple[float, Evidence]] = []
+    for fused_score, item in candidates:
+        title_tokens = set(_tokenize(item.title))
+        body_tokens = set(_tokenize(item.summary))
+        keyword_tokens = set(_tokenize(" ".join(item.keywords)))
+        title_coverage = len(query_tokens & title_tokens) / max(1, len(query_tokens))
+        body_coverage = len(query_tokens & body_tokens) / max(1, len(query_tokens))
+        keyword_coverage = len(query_tokens & keyword_tokens) / max(1, len(query_tokens))
+        phrase_bonus = float(any(run in item.summary.lower() for run in re.findall(r"[a-z0-9 -]{5,}|[\u4e00-\u9fff]{2,}", question.lower())))
+        score = fused_score * 10 + title_coverage * 0.35 + body_coverage * 0.25 + keyword_coverage * 0.2 + phrase_bonus * 0.1
+        reranked.append((round(score, 6), item))
+    return sorted(reranked, key=lambda row: (row[0], row[1].year), reverse=True)
+
+
 def load_catalog_evidence(path: Path | None = None) -> list[Evidence]:
     """Load the audited PubMed catalog as retrieval candidates."""
     catalog_path = path or ROOT / "data" / "pubmed_corpus.json"
@@ -152,8 +223,7 @@ def load_catalog_evidence(path: Path | None = None) -> list[Evidence]:
         year_match = re.search(r"(?:19|20)\d{2}", raw_year)
         year = int(year_match.group()) if year_match else 0
         title_terms = tuple(dict.fromkeys(re.findall(r"[A-Za-z][A-Za-z0-9-]+", title.lower())))[:12]
-        evidence.append(
-            Evidence(
+        document = Evidence(
                 item_id,
                 "pubmed_catalog",
                 title,
@@ -164,8 +234,9 @@ def load_catalog_evidence(path: Path | None = None) -> list[Evidence]:
                 str(item.get("source_type") or "PubMed研究"),
                 identifier,
                 title_terms,
+                source_id=item_id,
             )
-        )
+        evidence.extend(passage_evidence(document))
     return evidence
 
 
@@ -189,6 +260,44 @@ def mmr_select(ranked: list[tuple[float, Evidence]], limit: int = 3, diversity: 
         )
         selected.append(candidate)
         pool.remove(candidate)
+    return selected
+
+
+def evidence_role(item: Evidence) -> str:
+    quality = item.quality.lower()
+    if any(term in quality for term in ("指南", "综述", "meta", "review")):
+        return "overview"
+    if any(term in quality for term in ("随机", "rct", "trial", "试验")):
+        return "causal"
+    return "boundary"
+
+
+def complementary_select(ranked: list[tuple[float, Evidence]], limit: int = 3) -> list[tuple[float, Evidence]]:
+    """Prefer overview, causal and boundary evidence while preserving rank order."""
+    mmr_ranked = mmr_select(ranked, max(limit * 3, limit))
+    selected: list[tuple[float, Evidence]] = []
+    used_sources: set[str] = set()
+    for role in ("overview", "causal", "boundary"):
+        candidate = next(
+            (
+                row
+                for row in mmr_ranked
+                if evidence_role(row[1]) == role and (row[1].source_id or row[1].id) not in used_sources
+            ),
+            None,
+        )
+        if candidate:
+            selected.append(candidate)
+            used_sources.add(candidate[1].source_id or candidate[1].id)
+        if len(selected) == limit:
+            return selected
+    for row in mmr_ranked:
+        source_id = row[1].source_id or row[1].id
+        if source_id not in used_sources:
+            selected.append(row)
+            used_sources.add(source_id)
+        if len(selected) == limit:
+            break
     return selected
 
 
@@ -236,24 +345,31 @@ def validate_evidence_packet(case: dict[str, object], evidence: list[Evidence], 
         "expected_evidence_type": expected_type,
         "matched_evidence_types": matched_types,
         "searched_evidence_ids": [item.id for item in evidence],
+        "searched_source_ids": [item.source_id or item.id for item in evidence],
         "next_search": f"补查与“{expected_type}”匹配的公开指南、系统综述或随机对照试验，并核查适用人群与结局。",
     }
 
 
 def retrieve(case: dict[str, object], corpus: list[Evidence], condition: str, limit: int = 3) -> tuple[list[Evidence], dict[str, object]]:
-    ranked = hybrid_rank(str(case["question"]), corpus)
+    passages = [passage for item in corpus for passage in (passage_evidence(item) if not item.chunk_id else [item])]
+    question = str(case["question"])
+    lexical = bm25_rank(question, passages)
+    vector = tfidf_rank(question, passages)
+    fused = hybrid_rank(question, passages)
+    candidate_pool = fused[:30]
+    ranked = rerank_candidates(question, candidate_pool)
     if condition == "missing":
         selected: list[Evidence] = []
     elif condition == "noisy":
-        weak = [item for _, item in reversed(ranked) if item.id not in set(case["relevant_evidence_ids"])]
-        strong = [item for _, item in ranked if item.id in set(case["relevant_evidence_ids"])]
+        weak = [item for _, item in reversed(ranked) if item.source_id not in set(case["relevant_evidence_ids"])]
+        strong = [item for _, item in ranked if item.source_id in set(case["relevant_evidence_ids"])]
         selected = (weak[:2] + strong[:1])[:limit]
     elif condition == "good":
-        selected = [item for _, item in mmr_select(ranked, limit)]
+        selected = [item for _, item in complementary_select(ranked, limit)]
     else:
         raise ValueError("检索条件必须是 good、noisy 或 missing")
     relevant = set(case["relevant_evidence_ids"])
-    selected_ids = [item.id for item in selected]
+    selected_ids = [item.source_id or item.id for item in selected]
     hits = [item_id for item_id in selected_ids if item_id in relevant]
     precision = len(hits) / len(selected_ids) if selected_ids else 0.0
     recall = len(hits) / len(relevant) if relevant else 1.0
@@ -266,8 +382,13 @@ def retrieve(case: dict[str, object], corpus: list[Evidence], condition: str, li
         "recall_at_k": round(recall, 3),
         "mrr": round(1 / first_rank, 3) if first_rank else 0.0,
         "top_score_ratio": round((selected_scores[0] / top_score), 3) if selected_scores and top_score else 0.0,
-        "selected_scores": [{"id": item.id, "score": score_by_id[item.id]} for item in selected],
-        "ranked_candidates": [{"rank": index, "id": item.id, "score": score} for index, (score, item) in enumerate(ranked, 1)],
+        "candidate_pool_size": len(candidate_pool),
+        "lexical_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(lexical[:30], 1)],
+        "vector_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(vector[:30], 1)],
+        "fused_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(candidate_pool, 1)],
+        "selected_scores": [{"id": item.id, "source_id": item.source_id, "score": score_by_id[item.id]} for item in selected],
+        "selected_roles": [{"chunk_id": item.id, "source_id": item.source_id, "role": evidence_role(item)} for item in selected],
+        "ranked_candidates": [{"rank": index, "chunk_id": item.id, "source_id": item.source_id, "score": score} for index, (score, item) in enumerate(ranked, 1)],
         "retrieval_version": RETRIEVAL_VERSION,
     }
     diagnostics["validation"] = validate_evidence_packet(case, selected, diagnostics)
@@ -282,7 +403,7 @@ def build_prompt(
     validation: dict[str, object] | None = None,
 ) -> str:
     packet = "\n\n".join(
-        f"[{item.id}] {item.title}\n机构：{item.organization}；年份：{item.year}；ID：{item.identifier}\n摘要：{item.summary}\nURL：{item.url}"
+        f"[{item.id}] {item.title}\n来源ID：{item.source_id or item.id}；片段：{item.chunk_index}；机构：{item.organization}；年份：{item.year}；注册ID：{item.identifier}\n摘要：{item.summary}\nURL：{item.url}"
         for item in evidence
     ) or "（空）"
     policy = "REQUIRED" if evidence_required else "OPTIONAL"
@@ -301,6 +422,32 @@ EVIDENCE_POLICY={policy}
 EVIDENCE_GATE={gate}
 证据包：
 {packet}"""
+
+
+def build_evidence_map(evidence: list[Evidence]) -> dict[str, dict[str, object]]:
+    """Map every citable chunk to its registered source and URL."""
+    return {
+        (item.chunk_id or item.id): {
+            "source_id": item.source_id or item.id,
+            "identifier": item.identifier,
+            "url": item.url,
+            "title": item.title,
+            "chunk_index": item.chunk_index,
+            "content_hash": item.to_dict()["content_hash"],
+        }
+        for item in evidence
+    }
+
+
+def verify_evidence_map(evidence_map: dict[str, dict[str, object]]) -> dict[str, object]:
+    invalid: list[str] = []
+    for chunk_id, entry in evidence_map.items():
+        source_id = str(entry.get("source_id") or "")
+        identifier = str(entry.get("identifier") or "")
+        url = str(entry.get("url") or "")
+        if not chunk_id or not source_id or not identifier or not url.startswith("https://"):
+            invalid.append(chunk_id)
+    return {"valid": not invalid, "checked_chunks": len(evidence_map), "invalid_chunks": invalid}
 
 
 def proxy_status() -> dict[str, object]:
@@ -425,7 +572,7 @@ def _offline_answer(
 
 
 def _citation_support(answer: str, evidence: list[Evidence]) -> tuple[float, float, list[str]]:
-    registry = {item.id: item for item in evidence}
+    registry = {item.chunk_id or item.id: item for item in evidence}
     citations = re.findall(r"\[([A-Z][A-Z0-9_-]*)]", answer)
     external_urls = re.findall(r"https?://[^\s)]+", answer)
     unsupported: list[str] = [item_id for item_id in citations if item_id not in registry]
@@ -465,7 +612,8 @@ def score_answer(case: dict[str, object], answer: str, evidence: list[Evidence],
     citation_precision, unsupported_rate, unsupported = _citation_support(answer, evidence)
     citations = set(re.findall(r"\[([A-Z][A-Z0-9_-]*)]", answer))
     relevant = set(case["relevant_evidence_ids"])
-    citation_recall = len(citations & relevant) / len(relevant) if relevant else 1.0
+    cited_sources = {item.source_id or item.id for item in evidence if (item.chunk_id or item.id) in citations}
+    citation_recall = len(cited_sources & relevant) / len(relevant) if relevant else 1.0
     citation_quality = round((citation_precision + min(1.0, citation_recall)) / 2, 3) if citations else 0.0
     refused = any(term in answer for term in ("拒绝", "无法作出", "无法回答", "证据不足", "不能由通用问答给出", "不能给出具体"))
     expected_refusal = bool(case["should_abstain"]) or (evidence_required and not evidence)
@@ -524,6 +672,8 @@ def run_case(
             "answer_hash": hashlib.sha256(rag_answer.encode("utf-8")).hexdigest(),
             "metrics": score_answer(case, rag_answer, evidence, evidence_required=True),
             "evidence": [item.to_dict() for item in evidence],
+            "evidence_map": build_evidence_map(evidence),
+            "evidence_map_validation": verify_evidence_map(build_evidence_map(evidence)),
             "retrieval_metrics": retrieval_metrics,
             "validation": validation,
         },

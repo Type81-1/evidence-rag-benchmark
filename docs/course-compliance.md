@@ -8,9 +8,11 @@
 | 至少 500 条公开证据记录 | `data/pubmed_corpus.json` 含 500 条去重 PubMed 记录 | 已完成 |
 | metadata 可追溯 | 每条含 source_id、title、summary、year、organization、url、source_type | 已完成 |
 | 冻结测试题与对抗/拒答场景 | 两个领域各 8 题，包含证据不足、处方越界和急症升级 | 已完成 |
-| 最小 RAG 与 Top-K | 500 条目录加人工核查证据进入同一候选池，输出 Top 3 | 已完成 |
-| 混合召回、融合与去重 | BM25 + TF-IDF，RRF 融合，MMR 去重 | 已完成 |
-| 引用回查与幻觉检测 | 回答引用登记 ID；验证 ID、URL 和句子词项支持 | 已完成 |
+| passage 分块与定位 | 长材料约 400 token、80 token overlap；保存 chunk/source ID、token 数和字符区间 | 已完成 |
+| 最小 RAG 与 Top-K | 500 条来源加人工核查证据进入 passage 候选池，输出 Top 3 | 已完成 |
+| 混合召回、融合与重排 | BM25 + TF-IDF，RRF 融合 30 条候选，独立重排与 MMR | 已完成 |
+| 互补证据 | Top-3 报告 overview、causal、boundary 角色并避免同源重复 | 已完成 |
+| 引用回查与幻觉检测 | evidence map 验证 chunk ID、source ID、注册 ID/URL 和句子词项支持 | 已完成 |
 | 合格拒答 | 输出已检索、缺失证据、下一步；急症单独升级 | 已完成 |
 | 公平 A/B 与劣化实验 | A 裸模型，B 正常 RAG，C 噪声 RAG，D 缺失检索 | 已完成 |
 | 三路评估框架 | 程序化指标、可选 LLM judge、人工盲评录入与汇总 | 已完成 |
@@ -21,3 +23,5 @@
 1. 使用真实模型、冻结题集和预注册重复次数完成正式批跑。
 2. 至少两名合格评审者独立完成盲评。
 3. 基于真实盲评数据报告一致性，并在此之前不宣称 RAG 或专用系统更优。
+
+课件中的进阶与挑战能力可以组合，图示表达实施优先级而非互斥选择。本项目已经实现混合检索、重排、MMR、互补证据和自动化评测框架；LLM Wiki ingest/query/lint、查询改写与多轮检索尚未实现，也不计入“已完成”声明。

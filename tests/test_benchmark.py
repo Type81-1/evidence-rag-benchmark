@@ -11,7 +11,7 @@ import app as app_module
 import benchmark_engine
 import hypertension_benchmark
 import nutrition_benchmark
-from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_prompt, hybrid_rank, score_answer, validate_evidence_packet
+from benchmark_engine import PROMPT_VERSION, RUBRIC, Evidence, bm25_rank, build_evidence_map, build_prompt, hybrid_rank, passage_evidence, rerank_candidates, score_answer, split_passages, validate_evidence_packet, verify_evidence_map
 from course_compliance import build_compliance_report
 
 
@@ -54,6 +54,32 @@ def test_500_document_catalog_is_integrated_with_hybrid_retrieval() -> None:
     ranked = hybrid_rank("限钠饮食能降低血压吗", nutrition_benchmark.EVIDENCE)
     assert len(ranked) == len(nutrition_benchmark.EVIDENCE)
     assert ranked[0][0] > ranked[-1][0]
+
+
+def test_passage_chunking_records_source_location_and_overlap() -> None:
+    text = " ".join(f"token-{index}" for index in range(900))
+    passages = split_passages(text)
+    assert [item[3] for item in passages] == [400, 400, 260]
+    assert passages[1][1] < passages[0][2]
+    evidence = Evidence("T1", "test", "Title", "Org", 2026, text, "https://example.com/t1", "RCT", "PMID:1", ("test",))
+    chunks = passage_evidence(evidence)
+    assert chunks[0].chunk_id == "T1-C000"
+    assert chunks[1].source_id == "T1"
+    assert chunks[0].char_end > chunks[0].char_start
+
+
+def test_retrieval_exposes_fusion_reranking_and_evidence_map() -> None:
+    case = nutrition_benchmark.QUESTIONS[0]
+    evidence, diagnostics = nutrition_benchmark.retrieve(case, "good")
+    assert 20 <= diagnostics["candidate_pool_size"] <= 50
+    assert all(diagnostics[key] for key in ("lexical_candidates", "vector_candidates", "fused_candidates", "ranked_candidates"))
+    assert diagnostics["ranked_candidates"][0]["chunk_id"]
+    assert len(diagnostics["selected_roles"]) == 3
+    assert all(item["role"] in {"overview", "causal", "boundary"} for item in diagnostics["selected_roles"])
+    evidence_map = build_evidence_map(evidence)
+    assert verify_evidence_map(evidence_map)["valid"] is True
+    assert set(evidence_map) == {item.chunk_id for item in evidence}
+    assert all(entry["url"].startswith("https://") for entry in evidence_map.values())
 
 
 def test_course_compliance_report_passes_static_checks() -> None:
@@ -113,8 +139,8 @@ def test_offline_generation_does_not_read_expected_claims() -> None:
 
 def test_six_dimension_rubric_and_sentence_level_citation_support() -> None:
     case = nutrition_benchmark.QUESTIONS[0]
-    evidence = [nutrition_benchmark.EVIDENCE[1]]
-    answer = "## 结论\n\n降低钠摄入可以降低血压，但存在个体差异 [S2]。\n\n## 依据\n\n见随机对照试验。\n\n## 局限\n\n需结合整体饮食。\n\n## 安全提示\n\n不替代医生或营养师建议。"
+    evidence = passage_evidence(nutrition_benchmark.CURATED_EVIDENCE[1])
+    answer = "## 结论\n\n降低钠摄入可以降低血压，但存在个体差异 [S2-C000]。\n\n## 依据\n\n见随机对照试验。\n\n## 局限\n\n需结合整体饮食。\n\n## 安全提示\n\n不替代医生或营养师建议。"
     metrics = score_answer(case, answer, evidence, evidence_required=True)
     assert set(RUBRIC).issubset(metrics)
     assert metrics["citation_quality"] > 0

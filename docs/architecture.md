@@ -15,7 +15,7 @@
 | Arm | 条件 | 证据包 |
 | --- | --- | --- |
 | A | `baseline` | 空；证据策略 `OPTIONAL` |
-| B | `good` | BM25 + TF-IDF 双路召回、RRF 融合、MMR 去重后的 Top 3；策略 `REQUIRED` |
+| B | `good` | passage 级 BM25 + TF-IDF、RRF 30 候选、独立重排、MMR 与互补选择后的 Top 3；策略 `REQUIRED` |
 | C | `noisy` | 两条低相关证据加一条正常召回；策略 `REQUIRED` |
 | D | `missing` | 空；策略 `REQUIRED` |
 
@@ -25,8 +25,9 @@ Prompt 主体由 `benchmark_engine.build_prompt` 单点生成。每份真实报�
 
 ```mermaid
 flowchart LR
-    Q[冻结题集] --> R[BM25/TF-IDF 召回与 RRF/MMR]
-    R --> P[证据包与类型诊断]
+    Q[冻结题集] --> R[passage 级 BM25/TF-IDF 与 RRF]
+    R --> X[30 候选独立重排]
+    X --> P[MMR 与互补证据选择]
     P --> E[证据阀门 answer / abstain / escalate]
     Q --> A[Arm A 空证据包]
     E --> B[Arm B/C/D]
@@ -51,11 +52,12 @@ id, question, track, expected_evidence_type, notes, should_abstain
 
 ## 检索与引用验证
 
-- 正常检索使用题目文本对 10 条人工核查证据与 500 条 PubMed 目录记录执行 BM25 和 TF-IDF 双路召回，经 RRF 融合后用轻量 MMR 降低内容重复，不用金标准标签选文献。
+- 正常检索把来源转为带字符区间的 passage，对 10 条人工核查来源与 500 条 PubMed 来源执行 BM25 和 TF-IDF 双路召回。RRF 融合 30 条候选后使用独立覆盖度重排，再用 MMR 和 overview/causal/boundary 角色选择 Top 3，不用金标准标签选文献。
 - 报告 `Precision@3`、`Recall@3`、MRR、完整候选分数、类型命中和证据阀门理由。
 - 证据阀门检查低相关性、证据类型缺失、权威来源的证据不足结论、诊疗越界和紧急危险信号。
 - 合格拒答输出“已检索、缺失证据、下一步”，而不是只说“无法回答”。
 - 引用必须映射到证据包中的 ID 和注册 URL。
+- evidence map 显式保存 `chunk_id -> source_id -> identifier/URL`，验证时依次解析编号、查映射表和检查注册来源。
 - 每条证据同时输出标识符类型和标题、摘要、URL 的 SHA-256，便于确认评测时使用的内容版本。
 - 句子级支持采用词项重叠作自动筛查；它是代理指标，最终仍需人工核查全文和适用人群。
 

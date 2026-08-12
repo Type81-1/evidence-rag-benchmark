@@ -21,6 +21,10 @@ def build_compliance_report() -> dict[str, object]:
         for field in REQUIRED_CATALOG_FIELDS
     }
     source_ids = [str(item.get("source_id") or "") for item in documents]
+    sample_case = nutrition_benchmark.QUESTIONS[0]
+    sample_evidence, sample_diagnostics = nutrition_benchmark.retrieve(sample_case, "good")
+    sample_map = benchmark_engine.build_evidence_map(sample_evidence)
+    sample_map_validation = benchmark_engine.verify_evidence_map(sample_map)
     checks = {
         "catalog_has_at_least_500_documents": len(documents) >= 500,
         "catalog_metadata_is_complete": not any(missing_by_field.values()),
@@ -35,9 +39,20 @@ def build_compliance_report() -> dict[str, object]:
             any(bool(case["should_abstain"]) for case in questions)
             for questions in (nutrition_benchmark.QUESTIONS, hypertension_benchmark.QUESTIONS)
         ),
-        "retrieval_uses_hybrid_rrf_and_mmr": all(
-            term in benchmark_engine.RETRIEVAL_VERSION for term in ("bm25", "tfidf", "rrf", "mmr")
+        "passages_have_auditable_locations": all(
+            item.chunk_id and item.source_id and item.char_end > item.char_start and item.token_count > 0
+            for item in nutrition_benchmark.CATALOG_EVIDENCE
         ),
+        "retrieval_has_20_to_50_fused_candidates": 20 <= int(sample_diagnostics["candidate_pool_size"]) <= 50,
+        "retrieval_exposes_lexical_vector_fused_and_reranked_stages": all(
+            sample_diagnostics.get(key)
+            for key in ("lexical_candidates", "vector_candidates", "fused_candidates", "ranked_candidates")
+        ),
+        "retrieval_uses_independent_reranking_and_mmr": "rerank" in benchmark_engine.RETRIEVAL_VERSION and "mmr" in benchmark_engine.RETRIEVAL_VERSION,
+        "top_k_reports_complementary_evidence_roles": bool(sample_diagnostics.get("selected_roles")) and all(
+            item.get("role") in {"overview", "causal", "boundary"} for item in sample_diagnostics["selected_roles"]
+        ),
+        "evidence_map_resolves_chunks_to_registered_urls": bool(sample_map) and bool(sample_map_validation["valid"]),
         "six_dimension_rubric_is_frozen": len(benchmark_engine.RUBRIC) == 6,
         "llm_judge_pipeline_is_available": callable(benchmark_engine.judge_answer),
     }
@@ -47,6 +62,12 @@ def build_compliance_report() -> dict[str, object]:
         "catalog": {
             "document_count": len(documents),
             "missing_by_field": missing_by_field,
+        },
+        "advanced_path": {
+            "implemented": "hybrid_rag",
+            "completed_components": ["passage_chunking", "lexical_retrieval", "vector_retrieval", "rrf_fusion", "reranking", "mmr", "complementary_evidence", "evidence_map"],
+            "not_implemented": ["llm_wiki", "query_rewriting", "multi_round_retrieval"],
+            "interpretation": "Advanced capabilities are composable priorities, not mutually exclusive routes.",
         },
         "external_acceptance_items": [
             "Run the frozen benchmark with a real model and preregistered repeats.",

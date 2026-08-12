@@ -22,7 +22,7 @@
 | Arm | 条件 | 唯一变化 |
 | --- | --- | --- |
 | A | 裸模型 | 空证据包，`OPTIONAL` 策略 |
-| B | 正常 RAG | BM25 + TF-IDF 向量召回，经 RRF 融合与 MMR 去重后取 Top 3，`REQUIRED` 策略 |
+| B | 正常 RAG | passage 级 BM25 + TF-IDF 双路召回，RRF 融合 30 条候选，独立重排、MMR 与互补角色选择后取 Top 3，`REQUIRED` 策略 |
 | C | 劣化 RAG | 两条低相关证据加一条相关证据 |
 | D | 检索缺失 | 空证据包，`REQUIRED` 策略 |
 
@@ -48,12 +48,15 @@ python scripts/export_question_set.py
 
 ## 检索与指标
 
-正常检索使用 BM25 与本地 TF-IDF 向量空间双路召回，经 RRF 融合和轻量 MMR 去重，不使用金标准标签挑选文献。每个领域的候选池由 10 条人工核查证据和 500 条 PubMed 目录记录组成；目录逐条保存 `source_id`、标题、摘要、年份、期刊、URL 和来源类型。劣化 Arm 使用固定噪声注入协议。证据阀门在生成前检查 Top-K 相对相关性、证据类型、权威来源的证据不足结论、个体化诊疗越界和紧急危险信号，并输出 `answer`、`abstain` 或 `escalate`。检索层报告：
+正常检索先把摘要或全文材料切为可定位 passage；长材料按约 400 token、80 token 重叠切分，短摘要保留为单一 passage。每个 passage 保存 `source_id`、`chunk_id`、序号、token 数和字符区间。BM25 与本地 TF-IDF 向量空间双路召回后，RRF 融合 30 条候选，再执行独立精确重排、MMR 去重和 overview/causal/boundary 互补角色选择，不使用金标准标签挑选文献。每个领域的来源池由 10 条人工核查证据和 500 条 PubMed 记录组成。劣化 Arm 使用固定噪声注入协议。证据阀门在生成前检查 Top-K 相对相关性、证据类型、权威来源的证据不足结论、个体化诊疗越界和紧急危险信号，并输出 `answer`、`abstain` 或 `escalate`。检索层报告：
 
 - `Precision@3`
 - `Recall@3`
 - MRR
 - 完整候选排名与分数
+- lexical、vector、RRF fusion、rerank 四阶段排名
+- `chunk_id -> source_id -> identifier/URL` evidence map
+- Top-3 证据角色（overview、causal、boundary）
 - 证据类型命中和阀门原因
 
 合格拒答必须说明已经检索到什么、缺少什么，以及下一步应补查哪类证据；紧急场景优先升级就医。
@@ -90,6 +93,10 @@ Windows 下后端会自动读取当前系统代理，并在代理端口可用时
 单题可在网页勾选“调用真实模型”。批量实验会运行固定题集、四个 Arm 和 1–3 次重复，并把原始回答保存到 `data/runs/`。报告包含实际 Prompt、原始回答及哈希、完整检索排名、模型、温度、运行时、UTC 日期、Prompt/Rubric/检索版本、题集与语料库哈希和重复次数。
 
 当前仓库不附带任何声称 RAG 更优的真实模型结果；必须实际运行并完成盲评后才能下结论。
+
+## 进阶任务范围
+
+课件把能力分为基础必做、进阶建议和挑战选做，强调先完成最小闭环；这些能力不是互斥路线，可以按资源与目标组合。本项目已实现 passage 分块、词法/向量双路召回、RRF、独立重排、MMR、互补证据、evidence map 和自动化评测框架。尚未实现 LLM Wiki ingest/query/lint 更新闭环、查询改写和多轮检索，仓库不把这些未实现能力计入完成声明。
 
 ## 启动与测试
 

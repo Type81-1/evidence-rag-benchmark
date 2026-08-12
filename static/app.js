@@ -15,7 +15,7 @@ function escapeHtml(value=''){return String(value).replace(/[&<>"']/g,c=>({'&':'
 function percent(value){return `${Math.round(Number(value||0)*100)}%`;}
 async function responseJson(response){const text=await response.text();try{return text?JSON.parse(text):{};}catch{return {detail:{code:`HTTP_${response.status}`,message:text.slice(0,240)||'服务返回了非 JSON 错误'}};}}
 function errorMessage(data,fallback='运行失败'){const detail=data?.detail;return typeof detail==='string'?detail:(detail?.message||fallback);}
-function renderMarkdown(value){return escapeHtml(value).replace(/^## (.+)$/gm,'<h4>$1</h4>').replace(/^- (.+)$/gm,'<p class="bullet">$1</p>').replace(/\[([A-Z]\d+)]/g,'<mark>[$1]</mark>').replace(/\n{2,}/g,'</p><p>').replace(/^/,'<p>').replace(/$/,'</p>');}
+function renderMarkdown(value){return escapeHtml(value).replace(/^## (.+)$/gm,'<h4>$1</h4>').replace(/^- (.+)$/gm,'<p class="bullet">$1</p>').replace(/\[([A-Z][A-Z0-9_-]*)]/g,'<mark>[$1]</mark>').replace(/\n{2,}/g,'</p><p>').replace(/^/,'<p>').replace(/$/,'</p>');}
 function metricRows(metrics){return rubricKeys.map(key=>`<div class="mini-metric"><span>${metricLabels[key]}</span><b>${percent(metrics[key])}</b></div>`).join('');}
 
 async function loadStatus(){
